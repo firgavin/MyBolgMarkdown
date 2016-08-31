@@ -1,0 +1,62 @@
+---
+title: Nmap基础应用
+tags: Nmap扫描,渗透测试,信息安全
+grammar_cjkRuby: true
+---
+
+
+root@kali:~# nmap -A 119.29.184.253
+
+Starting Nmap 7.01 ( https://nmap.org ) at 2016-08-31 08:55 EDT
+Stats: 0:02:09 elapsed; 0 hosts completed (1 up), 1 undergoing SYN Stealth Scan
+SYN Stealth Scan Timing: About 48.66% done; ETC: 08:59 (0:02:15 remaining)
+Stats: 0:02:44 elapsed; 0 hosts completed (1 up), 1 undergoing SYN Stealth Scan
+SYN Stealth Scan Timing: About 49.10% done; ETC: 09:01 (0:02:50 remaining)
+Stats: 0:03:33 elapsed; 0 hosts completed (1 up), 1 undergoing SYN Stealth Scan
+SYN Stealth Scan Timing: About 50.16% done; ETC: 09:02 (0:03:32 remaining)
+Stats: 0:04:10 elapsed; 0 hosts completed (1 up), 1 undergoing SYN Stealth Scan
+SYN Stealth Scan Timing: About 60.19% done; ETC: 09:02 (0:02:45 remaining)
+RTTVAR has grown to over 2.3 seconds, decreasing to 2.0
+RTTVAR has grown to over 2.3 seconds, decreasing to 2.0
+RTTVAR has grown to over 2.3 seconds, decreasing to 2.0
+RTTVAR has grown to over 2.3 seconds, decreasing to 2.0
+Stats: 0:04:30 elapsed; 0 hosts completed (1 up), 1 undergoing SYN Stealth Scan
+SYN Stealth Scan Timing: About 72.36% done; ETC: 09:01 (0:01:43 remaining)
+RTTVAR has grown to over 2.3 seconds, decreasing to 2.0
+RTTVAR has grown to over 2.3 seconds, decreasing to 2.0
+Stats: 0:05:29 elapsed; 0 hosts completed (1 up), 1 undergoing SYN Stealth Scan
+SYN Stealth Scan Timing: About 82.90% done; ETC: 09:02 (0:01:08 remaining)
+Stats: 0:05:37 elapsed; 0 hosts completed (1 up), 1 undergoing SYN Stealth Scan
+SYN Stealth Scan Timing: About 86.19% done; ETC: 09:02 (0:00:54 remaining)
+Nmap scan report for 119.29.184.253
+Host is up (0.036s latency).
+Not shown: 995 closed ports
+PORT     STATE    SERVICE VERSION
+21/tcp   open     ftp     vsftpd 3.0.2
+22/tcp   open     ssh     OpenSSH 6.6.1p1 Ubuntu 2ubuntu2 (Ubuntu Linux; protocol 2.0)
+| ssh-hostkey: 
+|   1024 04:43:e3:bc:af:a3:64:5a:e6:ad:7d:cc:41:23:9b:61 (DSA)
+|   2048 d9:57:a2:89:e6:00:f0:96:df:51:b0:d7:88:07:ab:5a (RSA)
+|_  256 74:25:e7:db:7d:8f:0f:8b:42:cf:23:40:c8:31:d5:ae (ECDSA)
+80/tcp   open     http    nginx 1.4.6 (Ubuntu)
+| http-robots.txt: 1 disallowed entry 
+|_/wp-admin/
+|_http-server-header: nginx/1.4.6 (Ubuntu)
+|_http-title: firGavin\xE5\x86\x99\xE5\xAD\x97\xE7\x9A\x84\xE5\x9C\xB0\xE6\x96\xB9
+514/tcp  filtered shell
+4444/tcp filtered krb524
+Device type: WAP|general purpose|storage-misc
+Running (JUST GUESSING): Actiontec embedded (99%), Linux 2.4.X|3.X (99%), Microsoft Windows 7|2012|XP (96%), BlueArc embedded (91%)
+OS CPE: cpe:/h:actiontec:mi424wr-gen3i cpe:/o:linux:linux_kernel cpe:/o:linux:linux_kernel:2.4.37 cpe:/o:linux:linux_kernel:3.2 cpe:/o:microsoft:windows_7 cpe:/o:microsoft:windows_server_2012 cpe:/o:microsoft:windows_xp::sp3 cpe:/h:bluearc:titan_2100
+Aggressive OS guesses: Actiontec MI424WR-GEN3I WAP (99%), DD-WRT v24-sp2 (Linux 2.4.37) (98%), Linux 3.2 (98%), Microsoft Windows 7 or Windows Server 2012 (96%), Microsoft Windows XP SP3 (96%), BlueArc Titan 2100 NAS device (91%)
+No exact OS matches for host (test conditions non-ideal).
+Network Distance: 2 hops
+Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel
+
+TRACEROUTE (using port 80/tcp)
+HOP RTT     ADDRESS
+1   0.06 ms 10.10.10.2
+2   0.04 ms 119.29.184.253
+
+OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
+Nmap done: 1 IP address (1 host up) scanned in 423.07 seconds
