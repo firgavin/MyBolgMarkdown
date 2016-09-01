@@ -114,7 +114,6 @@ TRACEROUTE (using port 80/tcp)
 HOP RTT     ADDRESS
 1   0.06 ms 10.10.10.2
 2   0.04 ms 119.29.184.253
-
 OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 423.07 seconds
 ```
@@ -195,46 +194,46 @@ Nmap done: 1 IP address (1 host up) scanned in 423.07 seconds
 |245|	link|	LINK|
 |347|	fatserv|	Fatmen 服务器|
 |363|	rsvp_tunnel|	RSVP 隧道|
-369	|rpc2portmap|	Coda 文件系统端口映射器
-370|	codaauth2	|Coda 文件系统验证服务
-372	|ulistproc|UNIX Listserv
-389	|ldap	|轻型目录存取协议（LDAP）
-427	|svrloc	|服务位置协议（SLP）
-434|	mobileip-agent	|可移互联网协议（IP）代理
-435	|mobilip-mn	|可移互联网协议（IP）管理器
-443	|https|	安全超文本传输协议（HTTP）
-444	|snpp	|小型网络分页协议|
-445	|microsoft-ds	|通过 TCP/IP 的服务器消息块（SMB）
-464	|kpasswd|	Kerberos 口令和钥匙改换服务
-468	|photuris	|Photuris 会话钥匙管理协议
-487	|saft|	简单不对称文件传输（SAFT）协议
-488	|gss-http|	用于 HTTP 的通用安全服务（GSS）
-496	|pim-rp-disc|	用于协议独立的多址传播（PIM）服务的会合点发现（RP-DISC）
-500	|isakmp	|互联网安全关联和钥匙管理协议（ISAKMP）
-535	|iiop|	互联网内部对象请求代理协议（IIOP）
-538	|gdomap|	GNUstep 分布式对象映射器（GDOMAP）
-546	|dhcpv6-client|	动态主机配置协议（DHCP）版本6客户
-547	|dhcpv6-server|	动态主机配置协议（DHCP）版本6服务
-554	|rtsp	|实时流播协议（RTSP）
-563	|nntps|	通过安全套接字层的网络新闻传输协议（NNTPS）
-565|	whoami	|whoami
-587	|submission	|邮件消息提交代理（MSA）
-610	|npmp-local|	网络外设管理协议（NPMP）本地 / 分布式排队系统（DQS）
-611|	npmp-gui|	网络外设管理协议（NPMP）GUI / 分布式排队系统（DQS）
-612|	hmmp-ind	|HMMP 指示 / DQS
-631	|ipp	|互联网打印协议（IPP）
-636|ldaps	|通过安全套接字层的轻型目录访问协议（LDAPS）
-674	|acap|	应用程序配置存取协议（ACAP）
-694	|ha-cluster|	用于带有高可用性的群集的心跳服务
-749	|kerberos-adm|	Kerberos 版本5（v5）的“kadmin”数据库管理
-750	|kerberos-iv|	Kerberos 版本4（v4）服务
-765|	webster|	网络词典
-767	|phonebook|	网络电话簿
-873	|rsync	|rsync 文件传输服务
-992	|telnets|	通过安全套接字层的 Telnet（TelnetS）
-993	|imaps	|通过安全套接字层的互联网消息存取协议（IMAPS）
-994|	ircs|	通过安全套接字层的互联网中继聊天（IRCS）
-995|	pop3s|	通过安全套接字层的邮局协议版本3（POPS3）
+|369	|rpc2portmap|	Coda 文件系统端口映射器|
+|370|	codaauth2	|Coda 文件系统验证服务|
+|372	|ulistproc|UNIX Listserv|
+|389	|ldap	|轻型目录存取协议（LDAP）|
+|427	|svrloc	|服务位置协议（SLP）|
+|434|	mobileip-agent	|可移互联网协议（IP）代理|
+|435	|mobilip-mn	|可移互联网协议（IP）管理器|
+|443	|https|	安全超文本传输协议（HTTP）|
+|444	|snpp	|小型网络分页协议|
+|445	|microsoft-ds	|通过 TCP/IP 的服务器消息块（SMB）|
+|464	|kpasswd|	Kerberos 口令和钥匙改换服务|
+|468	|photuris	|Photuris 会话钥匙管理协议|
+|487	|saft|	简单不对称文件传输（SAFT）协议|
+|488	|gss-http|	用于 HTTP 的通用安全服务（GSS）|
+|496	|pim-rp-disc|	用于协议独立的多址传播（PIM）服务的会合点发现（RP-DISC）|
+|500	|isakmp	|互联网安全关联和钥匙管理协议（ISAKMP）|
+|535	|iiop|	互联网内部对象请求代理协议（IIOP）|
+|538	|gdomap|	GNUstep 分布式对象映射器（GDOMAP）|
+|546	|dhcpv6-client|	动态主机配置协议（DHCP）版本6客户|
+|547	|dhcpv6-server|	动态主机配置协议（DHCP）版本6服务|
+|554	|rtsp	|实时流播协议（RTSP）|
+|563	|nntps|	通过安全套接字层的网络新闻传输协议（NNTPS）|
+|565|	whoami	|whoami|
+|587	|submission	|邮件消息提交代理（MSA）|
+|610	|npmp-local|	网络外设管理协议（NPMP）本地 / 分布式排队系统（DQS）|
+|611|	npmp-gui|	网络外设管理协议（NPMP）GUI / 分布式排队系统（DQS）|
+|612|	hmmp-ind	|HMMP 指示 / DQS|
+|631	|ipp	|互联网打印协议（IPP）|
+|636|ldaps	|通过安全套接字层的轻型目录访问协议（LDAPS）|
+|674	|acap|	应用程序配置存取协议（ACAP）|
+|694	|ha-cluster|	用于带有高可用性的群集的心跳服务|
+|749	|kerberos-adm|	Kerberos 版本5（v5）的“kadmin”数据库管理|
+|750	|kerberos-iv|	Kerberos 版本4（v4）服务|
+|765|	webster|	网络词典|
+|767	|phonebook|	网络电话簿|
+|873	|rsync	|rsync 文件传输服务|
+|992	|telnets|	通过安全套接字层的 Telnet（TelnetS）|
+|993	|imaps	|通过安全套接字层的互联网消息存取协议（IMAPS）|
+|994|	ircs|	通过安全套接字层的互联网中继聊天（IRCS）|
+|995|	pop3s|	通过安全套接字层的邮局协议版本3（POPS3）|
 
 
   [1]: ./images/1340719324_9785.JPG "1340719324_9785.JPG"
