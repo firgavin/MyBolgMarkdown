@@ -49,8 +49,8 @@ Nmap的执行流程简单清晰，主要分为三个阶段
 ## Nmap工作原理
 主机发现发现的原理与Ping命令类似，发送探测包到目标主机，如果收到回复，那么说明目标主机是开启的。Nmap支持十多种不同的主机探测方式，比如发送ICMP ECHO/TIMESTAMP/NETMASK报文、发送TCPSYN/ACK包、发送SCTP INIT/COOKIE-ECHO包，用户可以在不同的条件下灵活选用不同的方式来探测目标机。Nmap使用TCP/IP协议栈指纹准确地判断目标主机的操作系统类型，Nmap对目标主机进行一系列的测试（T1-T7）利用测试结果建立相应的目标主机的Nmap指纹，然后Nmap会对指纹进行匹配，最终输出相应的结果。
 
-## Nmap基础学习
-##全面扫描
+# Nmap基础学习
+## 全面扫描
 Nmap的全面扫描选用参数-A：
 
 ``` 
@@ -58,7 +58,7 @@ root@kali:~# nmap -A target
 ```
 他可以全面扫描指定的IP或者域名的所有端口及其目标系统信息等，消耗时间长，不建议进行网段扫描。
 如下，全面扫下个人的服务器：
-``` 
+``` php
 root@kali:~# nmap -A 119.29.184.253
 
 Starting Nmap 7.01 ( https://nmap.org ) at 2016-08-31 08:55 EDT
@@ -86,22 +86,24 @@ Nmap scan report for 119.29.184.253
 Host is up (0.036s latency).
 Not shown: 995 closed ports
 PORT     STATE    SERVICE VERSION
-21/tcp   open     ftp     vsftpd 3.0.2
+21/tcp   open     ftp     vsftpd 3.0.2 #服务器上确实开通了ftp服务
 22/tcp   open     ssh     OpenSSH 6.6.1p1 Ubuntu 2ubuntu2 (Ubuntu Linux; protocol 2.0)
-| ssh-hostkey: 
+| ssh-hostkey: #开通了ssh服务
 |   1024 04:43:e3:bc:af:a3:64:5a:e6:ad:7d:cc:41:23:9b:61 (DSA)
 |   2048 d9:57:a2:89:e6:00:f0:96:df:51:b0:d7:88:07:ab:5a (RSA)
 |_  256 74:25:e7:db:7d:8f:0f:8b:42:cf:23:40:c8:31:d5:ae (ECDSA)
-80/tcp   open     http    nginx 1.4.6 (Ubuntu)
+80/tcp   open     http    nginx 1.4.6 (Ubuntu) #服务器构架为nginx+MySQL+php
 | http-robots.txt: 1 disallowed entry 
+#robots.txt是一个简单的记事本文件，这是网站管理员和搜录引擎对话的一个通道。在这个文件中网站管理者可以声明该网站中不想被robots访问的部分，或者指定搜索引擎只收录指定的内容。当一个搜索机器人(有的叫搜索蜘蛛)访问一个站点时，它会首先检查该站点根目录下是否存在robots.txt，如果存在，搜索机器人就会按照该文件中的内容来确定访问的范围;如果该文件不存在，那么搜索机器人就沿着链接抓取。这里我为了让搜索引擎快速收录个人网站故做了SEO（Search Engine Optimization）优化。
 |_/wp-admin/
-|_http-server-header: nginx/1.4.6 (Ubuntu)
+|_http-server-header: nginx/1.4.6 (Ubuntu)#wp建站
 |_http-title: firGavin\xE5\x86\x99\xE5\xAD\x97\xE7\x9A\x84\xE5\x9C\xB0\xE6\x96\xB9
-514/tcp  filtered shell
-4444/tcp filtered krb524
+514/tcp  filtered shell #滤壳
+4444/tcp filtered krb524 #	Kerberos 版本5（v5）到版本4（v4）门票转换器
 Device type: WAP|general purpose|storage-misc
 Running (JUST GUESSING): Actiontec embedded (99%), Linux 2.4.X|3.X (99%), Microsoft Windows 7|2012|XP (96%), BlueArc embedded (91%)
 OS CPE: cpe:/h:actiontec:mi424wr-gen3i cpe:/o:linux:linux_kernel cpe:/o:linux:linux_kernel:2.4.37 cpe:/o:linux:linux_kernel:3.2 cpe:/o:microsoft:windows_7 cpe:/o:microsoft:windows_server_2012 cpe:/o:microsoft:windows_xp::sp3 cpe:/h:bluearc:titan_2100
+#这里显然操作系统判断不是十分明了，不过结合前面的信息可以判断出是Linux系统
 Aggressive OS guesses: Actiontec MI424WR-GEN3I WAP (99%), DD-WRT v24-sp2 (Linux 2.4.37) (98%), Linux 3.2 (98%), Microsoft Windows 7 or Windows Server 2012 (96%), Microsoft Windows XP SP3 (96%), BlueArc Titan 2100 NAS device (91%)
 No exact OS matches for host (test conditions non-ideal).
 Network Distance: 2 hops
@@ -115,6 +117,121 @@ HOP RTT     ADDRESS
 OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 423.07 seconds
 ```
+## 端口及服务
+### 常见著名端口
+端口号码 / 层	名称	注释
+1	tcpmux	TCP 端口服务多路复用
+5	rje	远程作业入口
+7	echo	Echo 服务
+9	discard	用于连接测试的空服务
+11	systat	用于列举连接了的端口的系统状态
+13	daytime	给请求主机发送日期和时间
+17	qotd	给连接了的主机发送每日格言
+18	msp	消息发送协议
+19	chargen	字符生成服务；发送无止境的字符流
+20	ftp-data	FTP 数据端口
+21	ftp	文件传输协议（FTP）端口；有时被文件服务协议（FSP）使用
+22	ssh	安全 Shell（SSH）服务
+23	telnet	Telnet 服务
+25	smtp	简单邮件传输协议（SMTP）
+37	time	时间协议
+39	rlp	资源定位协议
+42	nameserver	互联网名称服务
+43	nicname	WHOIS 目录服务
+49	tacacs	用于基于 TCP/IP 验证和访问的终端访问控制器访问控制系统
+50	re-mail-ck	远程邮件检查协议
+53	domain	域名服务（如 BIND）
+63	whois++	WHOIS++，被扩展了的 WHOIS 服务
+67	bootps	引导协议（BOOTP）服务；还被动态主机配置协议（DHCP）服务使用
+68	bootpc	Bootstrap（BOOTP）客户；还被动态主机配置协议（DHCP）客户使用
+69	tftp	小文件传输协议（TFTP）
+70	gopher	Gopher 互联网文档搜寻和检索
+71	netrjs-1	远程作业服务
+72	netrjs-2	远程作业服务
+73	netrjs-3	远程作业服务
+73	netrjs-4	远程作业服务
+79	finger	用于用户联系信息的 Finger 服务
+80	http	用于万维网（WWW）服务的超文本传输协议（HTTP）
+88	kerberos	Kerberos 网络验证系统
+95	supdup	Telnet 协议扩展
+101	hostname	SRI-NIC 机器上的主机名服务
+102	iso-tsap	ISO 开发环境（ISODE）网络应用
+105	csnet-ns	邮箱名称服务器；也被 CSO 名称服务器使用
+107	rtelnet	远程 Telnet
+109	pop2	邮局协议版本2
+110	pop3	邮局协议版本3
+111	sunrpc	用于远程命令执行的远程过程调用（RPC）协议，被网络文件系统（NFS）使用
+113	auth	验证和身份识别协议
+115	sftp	安全文件传输协议（SFTP）服务
+117	uucp-path	Unix 到 Unix 复制协议（UUCP）路径服务
+119	nntp	用于 USENET 讨论系统的网络新闻传输协议（NNTP）
+123	ntp	网络时间协议（NTP）
+137	netbios-ns	在红帽企业 Linux 中被 Samba 使用的 NETBIOS 名称服务
+138	netbios-dgm	在红帽企业 Linux 中被 Samba 使用的 NETBIOS 数据报服务
+139	netbios-ssn	在红帽企业 Linux 中被 Samba 使用的NET BIOS 会话服务
+143	imap	互联网消息存取协议（IMAP）
+161	snmp	简单网络管理协议（SNMP）
+162	snmptrap	SNMP 的陷阱
+163	cmip-man	通用管理信息协议（CMIP）
+164	cmip-agent	通用管理信息协议（CMIP）
+174	mailq	MAILQ
+177	xdmcp	X 显示管理器控制协议
+178	nextstep	NeXTStep 窗口服务器
+179	bgp	边界网络协议
+191	prospero	Cliffod Neuman 的 Prospero 服务
+194	irc	互联网中继聊天（IRC）
+199	smux	SNMP UNIX 多路复用
+201	at-rtmp	AppleTalk 选路
+202	at-nbp	AppleTalk 名称绑定
+204	at-echo	AppleTalk echo 服务
+206	at-zis	AppleTalk 区块信息
+209	qmtp	快速邮件传输协议（QMTP）
+210	z39.50	NISO Z39.50 数据库
+213	ipx	互联网络分组交换协议（IPX），被 Novell Netware 环境常用的数据报协议
+220	imap3	互联网消息存取协议版本3
+245	link	LINK
+347	fatserv	Fatmen 服务器
+363	rsvp_tunnel	RSVP 隧道
+369	rpc2portmap	Coda 文件系统端口映射器
+370	codaauth2	Coda 文件系统验证服务
+372	ulistproc	UNIX Listserv
+389	ldap	轻型目录存取协议（LDAP）
+427	svrloc	服务位置协议（SLP）
+434	mobileip-agent	可移互联网协议（IP）代理
+435	mobilip-mn	可移互联网协议（IP）管理器
+443	https	安全超文本传输协议（HTTP）
+444	snpp	小型网络分页协议
+445	microsoft-ds	通过 TCP/IP 的服务器消息块（SMB）
+464	kpasswd	Kerberos 口令和钥匙改换服务
+468	photuris	Photuris 会话钥匙管理协议
+487	saft	简单不对称文件传输（SAFT）协议
+488	gss-http	用于 HTTP 的通用安全服务（GSS）
+496	pim-rp-disc	用于协议独立的多址传播（PIM）服务的会合点发现（RP-DISC）
+500	isakmp	互联网安全关联和钥匙管理协议（ISAKMP）
+535	iiop	互联网内部对象请求代理协议（IIOP）
+538	gdomap	GNUstep 分布式对象映射器（GDOMAP）
+546	dhcpv6-client	动态主机配置协议（DHCP）版本6客户
+547	dhcpv6-server	动态主机配置协议（DHCP）版本6服务
+554	rtsp	实时流播协议（RTSP）
+563	nntps	通过安全套接字层的网络新闻传输协议（NNTPS）
+565	whoami	whoami
+587	submission	邮件消息提交代理（MSA）
+610	npmp-local	网络外设管理协议（NPMP）本地 / 分布式排队系统（DQS）
+611	npmp-gui	网络外设管理协议（NPMP）GUI / 分布式排队系统（DQS）
+612	hmmp-ind	HMMP 指示 / DQS
+631	ipp	互联网打印协议（IPP）
+636	ldaps	通过安全套接字层的轻型目录访问协议（LDAPS）
+674	acap	应用程序配置存取协议（ACAP）
+694	ha-cluster	用于带有高可用性的群集的心跳服务
+749	kerberos-adm	Kerberos 版本5（v5）的“kadmin”数据库管理
+750	kerberos-iv	Kerberos 版本4（v4）服务
+765	webster	网络词典
+767	phonebook	网络电话簿
+873	rsync	rsync 文件传输服务
+992	telnets	通过安全套接字层的 Telnet（TelnetS）
+993	imaps	通过安全套接字层的互联网消息存取协议（IMAPS）
+994	ircs	通过安全套接字层的互联网中继聊天（IRCS）
+995	pop3s	通过安全套接字层的邮局协议版本3（POPS3）
 
 
 
