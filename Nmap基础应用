@@ -33,7 +33,7 @@ Nmap**核心功能**：
 
 **NSE脚本引擎**：NSE是Nmap最强大最灵活的特性之一，可以用于增强主机发现、端口扫描、版本侦测、操作系统侦测等功能，还可以用来扩展高级的功能如web扫描、漏洞发现。漏洞利用等等。Nmap使用lua语言来作为NSE脚本语言，目前的Nmap脚本库已经支持400多个脚本。
 
-
+## Nmap工作流程
 
 Nmap的执行流程简单清晰，主要分为三个阶段
 
@@ -43,11 +43,22 @@ Nmap的执行流程简单清晰，主要分为三个阶段
 
 善后阶段：在完成所有扫描操作后，调用post-script完成相应处理，然后打印出扫描的最终结果，并释放掉分配的资源。
 
-下图为Nmap的执行流程图
+下图为Nmap的执行流程图：
+![enter description here][2]
 
 ## Nmap工作原理
+主机发现发现的原理与Ping命令类似，发送探测包到目标主机，如果收到回复，那么说明目标主机是开启的。Nmap支持十多种不同的主机探测方式，比如发送ICMP ECHO/TIMESTAMP/NETMASK报文、发送TCPSYN/ACK包、发送SCTP INIT/COOKIE-ECHO包，用户可以在不同的条件下灵活选用不同的方式来探测目标机。Nmap使用TCP/IP协议栈指纹准确地判断目标主机的操作系统类型，Nmap对目标主机进行一系列的测试（T1-T7）利用测试结果建立相应的目标主机的Nmap指纹，然后Nmap会对指纹进行匹配，最终输出相应的结果。
 
+## Nmap基础学习
+##全面扫描
+Nmap的全面扫描选用参数-A：
 
+``` 
+root@kali:~# nmap -A target
+```
+他可以全面扫描指定的IP或者域名的所有端口及其目标系统信息等，消耗时间长，不建议进行网段扫描。
+如下，全面扫下个人的服务器：
+``` 
 root@kali:~# nmap -A 119.29.184.253
 
 Starting Nmap 7.01 ( https://nmap.org ) at 2016-08-31 08:55 EDT
@@ -103,6 +114,9 @@ HOP RTT     ADDRESS
 
 OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 423.07 seconds
+```
+
 
 
   [1]: ./images/1340719324_9785.JPG "1340719324_9785.JPG"
+  [2]: ./images/13945202699673.jpg "13945202699673.jpg"
