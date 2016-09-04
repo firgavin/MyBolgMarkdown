@@ -235,6 +235,42 @@ Nmap done: 1 IP address (1 host up) scanned in 423.07 seconds
 |994|	ircs|	通过安全套接字层的互联网中继聊天（IRCS）|
 |995|	pop3s|	通过安全套接字层的邮局协议版本3（POPS3）|
 
+### Unix特有端口
+| 端口号码 / 层	| 名称	|注释 |
+|---|---|---|
+|512/tcp	|exec	|用于对远程执行的进程进行验证|
+|512/udp	|biff [comsat]	|异步邮件客户（biff）和服务（comsat）|
+|513/tcp|	login|	远程登录（rlogin）|
+|513/udp	|who [whod]|	登录的用户列表|
+|514/tcp	|shell [cmd]|	不必登录的远程 shell（rshell）和远程复制（rcp）|
+|514/udp	|syslog|	UNIX 系统日志服务|
+|515|	printer [spooler]|	打印机（lpr）假脱机|
+|517/udp|	talk|	远程对话服务和客户|
+|518/udp|	ntalk|网络交谈（ntalk），远程对话服务和客户|
+|519	|utime [unixtime]|	UNIX 时间协议（utime）|
+|520/tcp|	efs	|扩展文件名服务器（EFS）|
+|520/udp|	router [route, routed]	|选路信息协议（RIP）|
+|521	|ripng	|用于互联网协议版本6（IPv6）的选路信息协议|
+|525	|timed [timeserver]|	时间守护进程（timed）|
+|526/tcp|	tempo [newdate]	|Tempo|
+|530/tcp	|courier [rpc]	|Courier 远程过程调用（RPC）协议|
+|531/tcp	|conference [chat]	|互联网中继聊天|
+|532	|netnews|	Netnews|
+|533/udp|	netwall	|用于紧急广播的 Netwal|
+|540/tcp	|uucp [uucpd]	|Unix 到 Unix 复制服务|
+|543/tcp	|klogin	|Kerberos 版本5（v5）远程登录|
+|544/tcp|	kshell	|Kerberos 版本5（v5）远程 shell|
+|548	|afpovertcp	|通过传输控制协议（TCP）的 Appletalk 文件编制协议（AFP）|
+|556	|remotefs [rfs_server, rfs]	|Brunhoff 的远程文件系统（RFS）|
+
+### 数据报传递协议端口
+显示了一个和数据报传递协议（DDP）有关的端口列表。DDP 在 AppleTalk 网络上被使用。
+| 端口号码 / 层	| 名称| 注释|
+|---|---|---|
+|1/ddp	|rtmp	|路由表管理协议|
+|2/ddp	| nbp	| 名称绑定协议|
+|4/ddp	|echo	|AppleTalk Echo 协议|
+|6/ddp	|zip|	区块信息协议|
 
   [1]: ./images/1340719324_9785.JPG "1340719324_9785.JPG"
   [2]: ./images/13945202699673.jpg "13945202699673.jpg"
