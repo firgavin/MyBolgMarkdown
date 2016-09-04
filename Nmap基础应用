@@ -60,7 +60,7 @@ root@kali:~# nmap -A target
 他可以全面扫描指定的IP或者域名的所有端口及其目标系统信息等，消耗时间长，不建议进行网段扫描。
 如下，全面扫下个人的服务器：
 ``` php
-root@kali:~# nmap -A 119.29.184.253
+root@kali:~# nmap -A 119.29.*.253
 
 Starting Nmap 7.01 ( https://nmap.org ) at 2016-08-31 08:55 EDT
 Stats: 0:02:09 elapsed; 0 hosts completed (1 up), 1 undergoing SYN Stealth Scan
@@ -113,7 +113,7 @@ Service Info: OSs: Unix, Linux; CPE: cpe:/o:linux:linux_kernel
 TRACEROUTE (using port 80/tcp)
 HOP RTT     ADDRESS
 1   0.06 ms 10.10.10.2
-2   0.04 ms 119.29.184.253
+2   0.04 ms 119.29.*.253
 OS and Service detection performed. Please report any incorrect results at https://nmap.org/submit/ .
 Nmap done: 1 IP address (1 host up) scanned in 423.07 seconds
 ```
