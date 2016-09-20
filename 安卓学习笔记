@@ -4,7 +4,247 @@ tags: 安卓开发
 grammar_cjkRuby: true
 ---
 
+[toc]
 
 # 安卓基础知识
 ## 认识Android中的ACtivity组件
 
+``` java
+package com.example.administrator.androidactivity;
+
+import android.content.Intent;
+import android.net.Uri;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.View;
+
+public class MainActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        //setContentView(R.layout.activity_main);
+        setContentView(R.layout.my_layout);//指定布局加载，这里加载自己的布局
+        findViewById(R.id.btnStartAnotherAty).setOnClickListener(new View.OnClickListener() {//注册点击click监听事件
+            @Override
+            public void onClick(View v) {
+                //startActivity(new Intent(MainActivity.this,AnotherAty.class));执行新的活动
+                startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.firgavin.cn")));//跳转网页
+              }
+        });
+    }
+}
+```
+在新创建的活动中：
+
+``` java
+package com.example.administrator.androidactivity;
+
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+
+public class AnotherAty extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_another_aty);//指定一个加载布局
+    }
+}
+```
+这里注意下跳转网页的方法：
+
+``` java
+startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://www.firgavin.cn")));
+```
+同样是Intent的中的方法，传递参数ACTION_VIEW和Uri.parse。
+
+
+
+## Activity生命周期
+![enter description here][1]
+
+> 注意活动是否可见
+
+> 多个活动时，前一个先onPause，新创建的onGreat-onStart-onResume，前一个再执行onStop（活动不可见时才执行）。
+
+>重载这些方法可以在Monitor中观察比如
+
+``` java
+package cn.firgavin.activitylifecircle;
+
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+
+public class MainActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        System.out.println("onGreate");
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        System.out.println("onStart");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        System.out.println("onResume");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        System.out.println("onPause");
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        System.out.println("onStop");
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        System.out.println("onDestroy");
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        System.out.println("onRestart");
+    }
+}
+```
+
+
+## 在Activity之间传递参数
+### 直接传递参数
+可以参考下面的传递数据包，总体思路一致，只是直接调用Intent中的方法：
+
+``` java
+	//为btnStartAty按钮注册click监听事件
+        findViewById(R.id.btnStartAty).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(MainActivity.this,TheAty.class);//Intent传递
+                i.putExtra("data","Hello, jikexueyuan.com");
+                startActivity(i);//开始活动
+            }
+        });
+```
+在TheAty中接收数据时：
+
+``` java
+@Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_the_aty);
+
+        Intent i = getIntent();//创建Intent来接收数据
+        tv = (TextView) findViewById(R.id.tv);
+        tv.setText(i.getStringExtra("data"));
+    }
+```
+对于不同的数据类型，灵活选择最合适的Intent方法（适用不同的数据类型）即可。下面的传递Bundle可以看做是众多类型中的一种。
+
+
+### 传递数据包Bundle
+在MainActivity.java中：
+
+``` java
+package cn.firgavin.sentargs;
+
+import android.content.Intent;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.View;
+
+public class MainActivity extends AppCompatActivity {
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);//选择加载布局
+
+		//为btnStartAty按钮注册click监听事件
+        findViewById(R.id.btnStartAty).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(MainActivity.this,TheAty.class);//Intent传递
+                //i.putExtra("data","Hello, jikexueyuan.com");
+                Bundle b = new Bundle();//新建数据包Bundle
+                b.putString("name","jikexueyuan");//key&value
+                b.putInt("age",2);
+                i.putExtras(b);//向Intent中传递数据包b
+                startActivity(i);//开始活动
+            }
+        });
+    }
+}
+```
+在另一个活动TheAty.java中：
+
+``` java
+package cn.firgavin.sentargs;
+
+import android.content.Intent;
+import android.net.Uri;
+import android.support.v4.text.TextDirectionHeuristicCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.widget.TextView;
+
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.common.api.GoogleApiClient;
+
+public class TheAty extends AppCompatActivity {
+
+    private TextView tv;//布局中选择TextView故创建TextView类型的
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_the_aty);
+
+        Intent i = getIntent();//创建Intent来接收数据包
+        Bundle data = i.getExtras();
+        tv = (TextView) findViewById(R.id.tv);
+        //tv.setText(i.getStringExtra("data"));
+        tv.setText(String.format("name=%s,age=%d",data.getString("name"),data.getInt("age")));
+        //向tv（TextView）中传递参数
+    }
+
+}
+```
+
+# 用户界面的编写
+
+# Android系统功能的调用
+
+# Android下数据存储
+
+# Android网络与通信
+
+# Android混合编程
+
+# Android开源库
+
+# Android测试
+
+
+
+
+
+  [1]: ./images/activity%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F.png "activity生命周期.png"
