@@ -309,8 +309,9 @@ findViewById(R.id.btnStartAty).setOnClickListener(new View.OnClickListener() {
 ```
 
 Serializable全自动实现，而Parcelable需要实现describeContents()和writeToPacel()两个方法。
+#### Parcelable方法实现
 
-``` stylus
+``` java
 package cn.firgavin.sentargs;
 
 import android.os.Parcel;
@@ -374,7 +375,7 @@ public class User implements Parcelable {
 ```
 然后修改TheAty中的Intent方法为getParcelable
 
-``` stylus
+``` java
  @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -393,7 +394,176 @@ public class User implements Parcelable {
 ```
 Serializable由系统提供，操作简单，速度慢；Parcelable自己写方法，速度快。
 
+### 传递数据回上一个Activity
+首先在MainActivity的xml中加入一个TextView控件用于显示传回数据：
 
+``` java
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:orientation="vertical"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="cn.firgavin.sentargs.MainActivity">
+
+   <Button
+       android:layout_width="wrap_content"
+       android:layout_height="wrap_content"
+       android:id="@+id/btnStartAty"
+       android:text="启动另一个Activity"/>
+
+   <TextView
+       android:layout_width="wrap_content"
+       android:layout_height="wrap_content"
+       android:id="@+id/textView"/>
+
+</LinearLayout>
+
+```
+在TheAty的xml中添加一个EditText和Button用于提交数据：
+
+``` java
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:paddingBottom="@dimen/activity_vertical_margin"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:orientation="vertical"
+    android:paddingTop="@dimen/activity_vertical_margin"
+    tools:context="cn.firgavin.sentargs.TheAty">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/tv"/>
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/editText" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Send Back"
+        android:id="@+id/button" />
+
+</LinearLayout>
+
+```
+之后再TheAty.java中添加Intent，同时为按钮注册监听事件：
+
+``` java
+package cn.firgavin.sentargs;
+
+import android.content.Intent;
+import android.net.Uri;
+import android.support.v4.text.TextDirectionHeuristicCompat;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.EditText;
+import android.widget.TextView;
+
+import com.google.android.gms.appindexing.Action;
+import com.google.android.gms.appindexing.AppIndex;
+import com.google.android.gms.common.api.GoogleApiClient;
+
+public class TheAty extends AppCompatActivity {
+
+    private TextView tv;
+    private EditText editText;
+    /**
+     * ATTENTION: This was auto-generated to implement the App Indexing API.
+     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     */
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_the_aty);
+
+        Intent i = getIntent();
+        //Bundle data = i.getExtras();
+
+        tv = (TextView) findViewById(R.id.tv);
+        editText = (EditText) findViewById(R.id.editText);
+        //tv.setText(i.getStringExtra("data"));
+        //tv.setText(String.format("name=%s,age=%d",data.getString("name"),data.getInt("age")));
+        User user = (User) i.getParcelableExtra("user");
+        tv.setText(String.format("name=%s,age=%d",user.getName(),user.getAge()));
+
+        findViewById(R.id.button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i =new Intent();
+                i.putExtra("data",editText.getText().toString());
+                setResult(1,i);
+                finish();
+            }
+        });
+    }
+
+}
+
+```
+设置完后在MainActivity中用TextView呈现传回的数据：
+
+``` java
+package cn.firgavin.sentargs;
+
+import android.content.Intent;
+import android.support.v7.app.AppCompatActivity;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.TextView;
+
+import java.io.Serializable;
+
+public class MainActivity extends AppCompatActivity {
+
+    private TextView textView;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        textView = (TextView) findViewById(R.id.textView);
+
+        findViewById(R.id.btnStartAty).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(MainActivity.this,TheAty.class);
+                //i.putExtra("data","Hello, jikexueyuan.com");
+                //Bundle b = new Bundle();
+                //b.putString("name","jikexueyuan");
+                //b.putInt("age",2);
+                //i.putExtras(b);
+                i.putExtra("user",new User("firgavin.cn",2));
+                //startActivity(i);
+                startActivityForResult(i,0);
+            }
+        });
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        textView.setText("另一个Activity传回的数据是"+data.getStringExtra("data"));
+    }
+}
+
+```
+相对于单项传递，回传的主要不同在于使用startActivityForResult方法，重写了onActivityResult用于处理回传数据。子活动中使用setResult传回数据即可。
 
 
 # 用户界面的编写
