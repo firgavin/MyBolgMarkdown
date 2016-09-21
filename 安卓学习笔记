@@ -266,6 +266,134 @@ public class User {
     }
 }
 ```
+其有两种传递方式，第一种采用Serializable，第二种采用Parcelable。
+#### Serializable实现
+首先在User类中继承
+
+``` java
+public class User implements Serializable {
+```
+MainActivity中，传入一个User型数据
+
+``` java
+findViewById(R.id.btnStartAty).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent i = new Intent(MainActivity.this,TheAty.class);
+                //i.putExtra("data","Hello, jikexueyuan.com");
+                //Bundle b = new Bundle();
+                //b.putString("name","jikexueyuan");
+                //b.putInt("age",2);
+                //i.putExtras(b);
+                i.putExtra("user",new User("firgavin.cn",2));
+                startActivity(i);
+            }
+        });
+```
+在TheAty中接收来自主活动的数据
+
+``` java
+ protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_the_aty);
+
+        Intent i = getIntent();
+        //Bundle data = i.getExtras();
+
+        tv = (TextView) findViewById(R.id.tv);
+        //tv.setText(i.getStringExtra("data"));
+        //tv.setText(String.format("name=%s,age=%d",data.getString("name"),data.getInt("age")));
+        User user = (User) i.getSerializableExtra("user");//使用序列化的Intent方法
+        tv.setText(String.format("name=%s,age=%d",user.getName(),user.getAge()));
+    }
+```
+
+Serializable全自动实现，而Parcelable需要实现describeContents()和writeToPacel()两个方法。
+
+``` stylus
+package cn.firgavin.sentargs;
+
+import android.os.Parcel;
+import android.os.Parcelable;
+
+import java.io.Serializable;
+
+/**
+ * Created by Administrator on 2016/9/21.
+ */
+public class User implements Parcelable {
+    //public class User implements Serializable {
+    private String name;
+    private int age;
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public User(String name,int age){
+        this.name=name;
+        this.age=age;
+    }
+
+    @Override
+    public int describeContents() {//自动生成默认的方法不需要改动
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {//根据User的具体类型来改写
+        dest.writeString(getName());
+        dest.writeInt(getAge());
+    }
+
+    public static final Creator<User> CREATOR =new Creator<User>() {//实现Create方法
+        @Override
+        public User createFromParcel(Parcel source) {
+            return new User(source.readString(),source.readInt());
+        }
+
+        @Override
+        public User[] newArray(int size) {
+            return new User[size];//返回size
+        }
+    };
+}
+
+```
+然后修改TheAty中的Intent方法为getParcelable
+
+``` stylus
+ @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_the_aty);
+
+        Intent i = getIntent();
+        //Bundle data = i.getExtras();
+
+        tv = (TextView) findViewById(R.id.tv);
+        //tv.setText(i.getStringExtra("data"));
+        //tv.setText(String.format("name=%s,age=%d",data.getString("name"),data.getInt("age")));
+        User user = (User) i.getParcelableExtra("user");//修改这里
+        tv.setText(String.format("name=%s,age=%d",user.getName(),user.getAge()));
+    }
+
+```
+Serializable由系统提供，操作简单，速度慢；Parcelable自己写方法，速度快。
+
+
 
 
 # 用户界面的编写
