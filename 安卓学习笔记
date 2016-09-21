@@ -177,7 +177,7 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btnStartAty).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent i = new Intent(MainActivity.this,TheAty.class);//Intent传递
+                Intent i = new Intent(MainActivity.this,TheAty.class);//Intent传递,从当前的活动传递到TheAty.class活动
                 //i.putExtra("data","Hello, jikexueyuan.com");
                 Bundle b = new Bundle();//新建数据包Bundle
                 b.putString("name","jikexueyuan");//key&value
@@ -228,6 +228,45 @@ public class TheAty extends AppCompatActivity {
 
 }
 ```
+
+### 传递值对象
+即在不同的活动之间传递用户自定义的数据类型；
+首先自定义一个数据类型User：
+
+``` java
+package cn.firgavin.sentargs;
+
+/**
+ * Created by Administrator on 2016/9/21.
+ */
+public class User {
+    private String name;
+    private int age;
+
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public User(String name,int age){
+    //构造函数
+        this.name=name;
+        this.age=age;
+    }
+}
+```
+
 
 # 用户界面的编写
 
