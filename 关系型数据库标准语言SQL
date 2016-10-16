@@ -36,5 +36,109 @@ SQL(Structured Query Language)即结构化查询语言，是关系数据库的�
 存储文件的逻辑结构组成了关系数据库的内模式，存储文件的物理结构是任意的，对用户是透明的。
 视图是从一个或者几个基本表导出的表，它本身不独立存储在数据库中，即数据库中只存放视图的定义而不存放视图对应的数据，这些数据仍存放在导出的视图的基本表中，因此视图是一个续表，视图在概念上与基本表等同，用户可以在视图上再定义视图。
 
+# [02]数据定义
+## 概述
+关系数据库系统支持三级模式结构、其模式、外模式和内模式中基本对象有表、视图和索引，因此SQL的数据定义功能包括模式定义、表定义、视图和索引的定义，如下表所示：
+
+|   操作对像  |   创建  |  删除   |  修改   |
+| --- | --- | --- | --- |
+|  模式   |  CREATE SCHEMA  |  DROP SCHEMA   |     |
+|   表  |   CREATE TABLE   |  DROP TABLE  |   ALTER TABLE  |
+|   视图  |   CREATE VIEW  |  DROP VIEW   |     |
+|   索引  |  CREATE INDEX   |  DROP INDEX   |    |
+说明：
+SQL通常不提供修改模式定义、修改视图定义和修改索引定义的操作，用户如果想修改这些对象，只能先将他们删除掉、然后再重建。
+
+## 模式的定义与删除
+**定义模式**
+在SQL中，模式定义语句如下：
+CREATE SCHEMA <模式名> AUTHORIZATION <用户名>
+如果没有指定<模式名>，那么<模式名>隐含为<用户名>。
+要创建模式，调用该名必须拥有DBA权限，或者获得了DBA授予的CREATE SCHEMA的权限。
+eg:
+CREATE SCHIEMA  AUTORIZATION WANG;
+说明：该语句没有指定模式名，所以模式名隐含为用户名WANG
+定义模式实际上定义了一个命名空
+间，在这个空间中可以进一步定义该模式包含的数据对象，比如基本表、视图、索引等。
+目前在CREATE　SCHEMA中可以接收CREATE TABLE、CREATE VIEW 和GRANT子句，也就说用户可以在创建模式的同时在这个模式定义中进一步创建基本表、视图、定义授权。
+
+``` sql
+CREATE SCHEMA TEST AUTHORIZATION ZHANG  
+   CREATE TABLE TAB1(  
+        COL1,SMALLINT,  
+        COL2,INT,  
+        COL3,CHAR(20)  
+    );  
+```
+该语句为用户ZHANG创建了一个模式TEST，并且在其中定义了一个表TAB1。
+
+**删除模式**
+在SQL中，删除模式语句如下：
+DROP SCHEMA <模式名> <CASCADE | RESTRICT>
+其中CASCADE和RESTRICT两者必选其一。
+说明：
+CASCADE(级联)：表示在删除模式的同时把该模式中所有的数据库对象全部一起删除
+RESTRICT(限制)：表示如果该模式中已经定义了下属的数据库对象(如表、视图等)则拒绝该删除语句的执行，只有当该模式中没有任何下属的对象时才能执行DROP SCHEMA语句。
+eg:
+DROP SCHEMA ZHANG CASCADE
+该语句删除了模式ZHANG，同时，该模式中已经定义的表TAB1也被删除了。
+
+##  基本表的定义、删除与修改
+定义基本表
+创建了一个模式，就建立了一个数据库的命名空间，一个框架，在这个空间中首先要定义的是该模式包含的数据库基本表。
+SQL语言使用CREATE TABLE 语句定义基本表，其基本格式如下：
+
+``` sql
+CREATE TABLE <表名>(  
+    <列名> <数据类型> [列级完整性约束条件],  
+    <列名> <数据类型> [列级完整性约束条件],  
+ <列名> <数据类型> [列级完整性约束条件],  
+<表级完整性约束条件>  
+  
+);  
+```
+说明：
+建表的同时通常还可以定义与该表有关的完整性约束条件，这些完整性约束条件被存入系统的数据字典中，当用户操作表中数据时由RDBMS自动检查该操作是否违背这些完整性约束条件，如果完整性约束条件涉及到该表的多个属性列，则必须定义在表级上，否则既可以定义在列级也可以定义在表级。
+eg:建立一个学生表[Student] 基于MySQL数据库
+
+``` sql
+CREATE TABLE Student(  
+    Sno CHAR(9) PRIMARY KEY,/*列级完整性约束条件，Sno是主码*/  
+    Sname CHAR(9) UNIQUE,/*Sname取唯一值*/  
+    Ssex CHAR(2),  
+    Sage SMALLINT,  
+    Sdept CHAR(20)  
+);  
+```
+系统执行上面的CREATE TABLE语句后，就在数据库中建立一个新的空的学生表Student，并将有关学生表的定义以及有关约束条件存放在数据字典中。
+eg:建立一个课程表[Course] 基于mysql数据库
+
+``` sql
+CREATE TABLE Course(  
+    Cno CHAR(4) PRIMARY KEY,/*列级完整性约束条件，Cno是主码*/  
+    Cname CHAR(40),  
+    Cpno CHAR(4),  
+    Coredit SMALLINT,  
+    CONSTRAINT FK_ID FOREIGN KEY (Cpno) REFERENCES Course(Cno) /*Cpno的含义是选修课*/  
+);  
+```
+eg:建立学生选课表SC
+
+``` sql
+CREATE TABLE SC(  
+    Sno CHAR(7),  
+    Cno CHAR(4),  
+    Grade SMALLINT,  
+    PRIMARY KEY(Sno,Cno),/*主码由两个属性构成，必须作为表级完整性进行定义*/  
+    FOREIGN KEY (Sno) REFERENCES Student(Sno), /*表级完整性约束条件，Sno是外码，被参照表时Student*/  
+    FOREIGN KEY (Cno) REFERENCES Course(Cno) /*表级完整性约束条件，Cno是外码，被参照表时Course*/  
+);  
+```
+**数据类型**
+关系模型中有一个很重要的概念是域，每一个属性来自一个域，它的取值必须是域中的值，在SQL中域的概念用数据类型来实现，定义表的各个属性时需要指明其数据类型以及长度，SQL提供了一些重要的数据类型，如下图所示，注意：不同的RDBMS中支持的数据类型不完全相同。
+一个属性选用哪种数据类型要根据实际情况来决定，一般要从两个方面来考虑，一是取值范围，二是要做哪些运算，比如对于年龄(Sage)属性，可以采用CHAR(3)作为数据类型，但是考虑到年龄上做算术运算，比如说求平均年龄，所以采用整数作为数据类型，因为CHAR(n)数据类型上不能进行算术运算，整数又分为长整数和短整数两种，因为一个人年龄在百岁左右，所以选用短整数作为年龄的数据类型。
+![enter description here][2]
+
 
   [1]: ./images/sql%E6%A8%A1%E5%BC%8F%E5%9B%BE.png "sql模式图.png"
+  [2]: ./images/sql%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B.png "sql数据类型.png"
