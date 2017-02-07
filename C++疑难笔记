@@ -1,5 +1,5 @@
 ---
-title: C++疑难笔记
+title: C&C++疑难笔记
 tags: C++,难点
 grammar_cjkRuby: true
 ---
@@ -83,4 +83,39 @@ char* p = "hello" + 1;
 char* q; q = "hello" + 1;
 void foo( char* s ); foo( "hello" + 1 );
 ```
+## GCC/G++/C/C++的区别
+
+``` cpp
+gcc 是c的编译器，g++是c++的编译器。cc一般是一个符号连接，指向gcc。 
+CC一般是makefile里面的一个名字，具体是什么根据实际情况决定。 
+gcc和g++都是GNU(组织)的一个编译器。 
+
+> 误区一:gcc只能编译c代码,g++只能编译c++代码
+
+两者都可以，但是请注意： 
+1,后缀为.c的，gcc把它当作是C程序，而g++当作是c++程序；后缀为.cpp的，两者都会认为是c++程序，注意，虽然c++是c的超集，但是两者对语法的要求是有区别的。C++的语法规则更加严谨一些。 
+2,编译阶段，g++会调用gcc，对于c++代码，两者是等价的，但是因为gcc命令不能自动和C＋＋程序使用的库联接，所以通常用g++来完成链接，为了统一起见，干脆编译/链接统统用g++了，这就给人一种错觉，好像cpp程序只能用g++似的。 
+
+> 误区二:gcc不会定义`__cplusplus`宏，而g++会
+
+实际上，这个宏只是标志着编译器将会把代码按C还是C++语法来解释，如上所述，如果后缀为.c，并且采用gcc编译器，则该宏就是未定义的，否则，就是已定义。 
+
+> 误区三:编译只能用gcc，链接只能用g++
+
+严格来说，这句话不算错误，但是它混淆了概念，应该这样说：编译可以用gcc/g++，而链接可以用g++或者gcc -lstdc++。因为gcc命令不能自动和C＋＋程序使用的库联接，所以通常使用g++来完成联接。但在编译阶段，g++会自动调用gcc，二者等价。 
+
+> 请问CC cc gcc g++本质区别在什么地方？
+
+传统上, UNIX OS 会配带 C compiler by default. 一般用符号名 cc. 而C++ compiler 需要另外买. 
+常见的有: 
+Linux: gcc/g++ 
+Solaris: cc/CC 
+HP-UX: aCC 
+AIX: xlc/xlC 
+SCO: ?/? 
+几乎所有的情况, C/C++ compiler 都只是front end driver. 后面的编译器是一样的. 比如gcc, g++ 提供不同的选项给编译器以及link editor. 这些包括用户选项, 缺省选项, 对应的缺省系统库. 每个compiler有一个configuratoin file来指定这些缺省选项. 使用 verbose mode (-v) 可以看到这些内容. 
+C++ 程序因为语法(namespace, class, overload...), 需要mangle 所有的symbol name. 与C程序link的时候需要用extern "C". 
+C++的编译器肯定可以编译C的的代码，注意除了C++对C的语法扩充之外，编译和链接C和C++的标准库通常也不一样呢。
+```
+
 
