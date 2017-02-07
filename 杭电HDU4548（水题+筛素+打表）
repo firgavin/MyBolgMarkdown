@@ -1,0 +1,96 @@
+---
+title: 杭电HDU4548（水题+筛素+打表）
+
+---
+
+> **美素数** 
+> Time Limit: 3000/1000 MS (Java/Others)    Memory Limit:65535/32768 K (Java/Others) Total Submission(s): 6428    Accepted  Submission(s): 2254
+> 
+> **Problem Description** 　　
+> 小明对数的研究比较热爱，一谈到数，脑子里就涌现出好多数的问题，今天，小明想考考你对素数的认识。问题是这样的：一个十进制数，如果是素数，而且它的各位数字和也是素数，则称之为“美素数”，如29，本身是素数，而且2+9 => 11也是素数，所以它是美素数。给定一个区间，你能计算出这个区间内有多少个美素数吗？  
+> 
+> **Input** 
+> 第一行输入一个正整数T，表示总共有T组数据(T <= 10000)。 接下来共T行，每行输入两个整数L，R(1<= L <= R<= 1000000)，表示区间的左值和右值。  
+> 
+> **Output**
+>  对于每组数据，先输出Case数，然后输出区间内美素数的个数（包括端点值L,R）。 每组数据占一行，具体输出格式参见样例。  
+> 
+> **Sample Input** 
+> 3 
+> 1 100 
+> 2 2
+> 3 19  
+> 
+> **Sample Output** 
+> Case #1: 14 
+> Case #2: 1 
+> Case #3: 4
+
+``` cpp
+#include<iostream>
+#include<cstring>
+#include<algorithm>
+
+using namespace std;
+const int maxn = 1000000 + 1;
+int prime[maxn], mark[maxn];
+
+bool isBeautifulPrime(int k) {
+	int sum = 0;
+	while (k>0) {
+		sum = sum + k % 10;
+		k = k / 10;
+	}
+	if ((prime[sum] == 2) || (!prime[sum])) return true;
+	else return false;
+}
+
+void findPrime() {
+	memset(prime, 0, sizeof(prime));
+	prime[0] = prime[1] = 1;
+	for (int i = 2;i<maxn;i++) {
+		if (!prime[i]) {
+			//cout << i << " ";
+			for (int j = i + i;j<maxn;j += i)
+				prime[j] = 1;
+		}
+	}
+}
+
+void findBeautifulPrime() {
+	for (int i = 2;i<maxn;i++) {
+		if (!prime[i]) {
+			if (isBeautifulPrime(i)) {
+				prime[i] = 2;
+				//cout << "@ " << i << endl;
+			}
+		}
+	}
+}
+
+int main(void)
+{
+	int t, l, r;
+	findPrime();
+	findBeautifulPrime();
+	int key = 0;
+	memset(mark, 0, sizeof(mark));
+	for (int i = 1;i<maxn;i++) {
+		if (prime[i] == 2) key++;
+		mark[i] = key;
+	}
+	while (cin >> t && t) {
+		int cases = 0;
+		while (t--) {
+			cin >> l >> r;
+			if (prime[l] == 2)
+				cout << "Case #" << (++cases) << ": " << (mark[r] - mark[l] + 1) << endl;
+			else
+				cout << "Case #" << (++cases) << ": " << (mark[r] - mark[l]) << endl;
+		}
+	}
+}
+```
+
+
+
