@@ -1,5 +1,5 @@
 ---
-title: C&C++疑难笔记
+title: C++疑难笔记
 tags: C++,难点
 grammar_cjkRuby: true
 ---
@@ -83,37 +83,35 @@ char* p = "hello" + 1;
 char* q; q = "hello" + 1;
 void foo( char* s ); foo( "hello" + 1 );
 ```
-## GCC/G++/C/C++的区别
+## size_t是什么
+1) size_t 类型定义在cstddef头文件中，该文件是C标准库的头文件stddef.h的C++版。它是一个与机器相关的unsigned类型，其大小足以保证存储内存中对象的大小。
+	例如：bitset的size操作返回bitset对象中二进制位中的个数，返回值类型是size_t。
+	例如：在用下标访问元素时，vector使用vector::size_type作为下标类型，而数组下标的正确类型则是size_t。vector使用的下标实际也是size_t，源码是typedef size_t size_type。
 
-``` cpp
-gcc 是c的编译器，g++是c++的编译器。cc一般是一个符号连接，指向gcc。 
-CC一般是makefile里面的一个名字，具体是什么根据实际情况决定。 
-gcc和g++都是GNU(组织)的一个编译器。 
-
-> 误区一:gcc只能编译c代码,g++只能编译c++代码
-
-两者都可以，但是请注意： 
-1,后缀为.c的，gcc把它当作是C程序，而g++当作是c++程序；后缀为.cpp的，两者都会认为是c++程序，注意，虽然c++是c的超集，但是两者对语法的要求是有区别的。C++的语法规则更加严谨一些。 
-2,编译阶段，g++会调用gcc，对于c++代码，两者是等价的，但是因为gcc命令不能自动和C＋＋程序使用的库联接，所以通常用g++来完成链接，为了统一起见，干脆编译/链接统统用g++了，这就给人一种错觉，好像cpp程序只能用g++似的。 
-
-> 误区二:gcc不会定义`__cplusplus`宏，而g++会
-
-实际上，这个宏只是标志着编译器将会把代码按C还是C++语法来解释，如上所述，如果后缀为.c，并且采用gcc编译器，则该宏就是未定义的，否则，就是已定义。 
-
-> 误区三:编译只能用gcc，链接只能用g++
-
-严格来说，这句话不算错误，但是它混淆了概念，应该这样说：编译可以用gcc/g++，而链接可以用g++或者gcc -lstdc++。因为gcc命令不能自动和C＋＋程序使用的库联接，所以通常使用g++来完成联接。但在编译阶段，g++会自动调用gcc，二者等价。 
-
-> 请问CC cc gcc g++本质区别在什么地方？
-
-传统上, UNIX OS 会配带 C compiler by default. 一般用符号名 cc. 而C++ compiler 需要另外买. 常见的有: 
-Linux: gcc/g++ 
-Solaris: cc/CC 
-HP-UX: aCC 
-几乎所有的情况, C/C++ compiler 都只是front end driver. 后面的编译器是一样的. 比如gcc, g++ 提供不同的选项给编译器以及link editor. 这些包括用户选项, 缺省选项, 对应的缺省系统库. 每个compiler有一个configuratoin file来指定这些缺省选项. 使用 verbose mode (-v) 可以看到这些内容. 
-C++ 程序因为语法(namespace, class, overload...), 需要mangle 所有的symbol name. 与C程序link的时候需要用extern "C". 
-C++的编译器肯定可以编译C的的代码，注意除了C++对C的语法扩充之外，编译和链接C和C++的标准库通常也不一样呢。
+2) 一个基本的无符号整数的C / C + +类型， 它是sizeof操作符返回的结果类型， 该类型的大小是选择。因此，它可以存储在理论上是可能的任何类型的数组的最大大小。 换句话说，一个指针可以被安全地放进为size_t类型（一个例外是类的函数指针，但是这是一个特殊的情况下）。 size_t类型通常用于循环、数组索引、大小的存储和地址运算。 虽然size_t可以存储一个指针，它的目的是更好地使用另一个unsinged整数类型uintptr_t形式。 在某些情况下，使用size_t类型是更为有效，比习惯性使用无符号类型的程序会更安全。
+	size_t是在基于无符号整数memsize类型的C / C + +的标准库中定义的。 C语言中，此类型位于头文件stddef.h中，而在C++中，则位于cstddef中。
+    
+ 3) size_t在C语言中就有了。
+	它是一种“整型”类型，里面保存的是一个整数，就像int, long那样。这种整数用来记录一个大小(size)。size_t的全称应该是size type，就是说“一种用来记录大小的数据类型”。通常我们用sizeof(XXX)操作，这个操作所得到的结果就是size_t类型。因为size_t类型的数据其实是保存了一个整数，所以它也可以做加减乘除，也可以转化为int并赋值给int类型的变量。类似的还有wchar_t, ptrdiff_t。wchar_t就是wide char type，“一种用来记录一个宽字符的数据类型”。ptrdiff_t就是pointer difference type，“一种用来记录两个指针之间的距离的数据类型”。通常，size_t和ptrdiff_t都是用typedef来实现的。你可能在某个头文件里面找到类似的语句：`typedef unsigned int size_t;`而wchar_t则稍有不同。在一些旧的编译器中，`wchar_t`也可能是用typedef来实现，但是新的标准中`wchar_t`已经是`C/C++`语言的关键字，`wchar_t`类型的地位已经和`char`, `int`的地位等同了。在标准C/C++的语法中，只有int float char bool等基本的数据类型，至于`size_t`或`size_type`都是以后的编程人员为了方便记忆所定义的一些便于理解的由基本数据类型的变体类型。例如：`typedef int size_t`定义了`size_t`为整型。
+    
+ 4) 示例代码：
+``` stylus
+int i;//定义一个int类型的变量i
+size_t size=sizeof(i);//用sizeof操作得到变量i的类型的大小
+//这是一个size_t类型的值
+//可以用来对一个size_t类型的变量做初始化
+i=(int)size;//size_t类型的值可以转化为int类型的值
+char c='a';//c保存了字符a，占一个字节
+wchar_twc=L'a';//wc保存了宽字符a，占两个字节
+//注意'a'表示字符a，L'a'表示宽字符a
+intarr[]={1,2,3,4,5};//定义一个数组
+int*p1=&arr[0];//取得数组中元素的地址，赋值给指针
+int*p2=&arr[3];
+ptrdiff_t diff=p2-p1;//指针的减法可以计算两个指针之间相隔的元素个数
+//所得结果是一个ptrdiff_t类型
+i=(int)diff;//ptrdiff_t类型的值可以转化为int类型的值
 ```
+
 
 
 
