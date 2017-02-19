@@ -1,0 +1,81 @@
+---
+title: ACM数论
+tags: 新建,模板,小书匠
+grammar_cjkRuby: true
+---
+
+
+欢迎使用 **{小书匠}(xiaoshujiang)编辑器**，您可以通过==设置==里的修改模板来改变新建文章的内容。
+## 素数&&整除理论
+### 素数的判定
+一个数 n 如果是合数，那么它的所有的因子不超过`sqrt(n)`，复杂度是`o(n*sqrt(n))`：
+
+``` cpp
+bool prime(int x){//判断x是不是质数，是返回true，不是返回false 
+    if(x <= 1) return false; 
+    for(int i = 2; i <= sqrt(x + 0.5); i ++){//0.5是防止根号的精度误差 
+        if(x % i == 0) return false;
+    }
+    return true;
+}
+```
+或者是这样写也行：
+
+``` cpp
+bool prime(int x){//判断x是不是质数，是返回true，不是返回false 
+    if(x <= 1) return false; 
+    for(int i = 2; i * i <= x; i ++){//用乘法避免根号的精度误差 
+        if(x % i == 0) return false;
+    }
+    return true;
+}
+//根据题目不同，如果i*i会爆int，记得开longlong
+```
+再优化可以引入筛素思想再判断，这是需要一个素数表。
+
+
+
+
+### 素数的筛选（构造素数表）
+可以使用筛素法，复杂度`O(nloglogn)`：
+
+``` cpp
+bool prime[N];
+void init(){
+    for(int i = 2; i < N; i ++) prime[i] = true;
+    for(int i = 2; i*i < N; i ++){//判断改成i*i<N 
+        if(prime[i]){
+            for(int j = i*i; j < N; j += i){//从i*i开始就可以了 
+                prime[j] = false;  
+            }
+        }
+    }
+}
+```
+或者采用线性筛素法`O(n)`：
+
+``` cpp
+#include<cstdio>
+const int N = 100000 + 5;
+bool prime[N];//prime[i]表示i是不是质数 
+int p[N], tot;//p[N]用来存质数 
+void init(){
+    for(int i = 2; i < N; i ++) prime[i] = true;//初始化为质数 
+    for(int i = 2; i < N; i++){
+        if(prime[i]) p[tot ++] = i;//把质数存起来 
+        for(int j = 0; j < tot && i * p[j] < N; j++){
+            prime[i * p[j]] = false;
+            if(i % p[j] == 0) break;//保证每个合数被它最小的质因数筛去 
+        }
+    }    
+}
+int main(){
+    init();
+}
+```
+
+
+
+### 素数的性质
+
+
