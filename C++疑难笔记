@@ -33,6 +33,26 @@ C/C++编译过程 中，对于可执行文件中的函数调用，可分别采�
 
 > **动态链接**：在此种方式下，函数的代码被放到称作是动态链接库或共享对象的某个目标文件中。链接程序此时所作的只是在最终的可执行程序中记录下共享对象的名字以及其它少量的登记信息。在此可执行文件被执行时，动态链接库的全部内容将被映射到运行时相应进程的虚地址空间。动态链接程序将根据可执行程序中记录的信息找到相应的函数代码。备注：头文件里我们通常只放置声明而不是定义，因为头文件有可能被释放到多个源文件中，每个源文件都会单独编译，这样链接时就会发现全局空间中有多个定义了。
 
+## 头文件`#include<bits/stdc++.h>`
+
+Hi! See this useful C++ include directive.
+This let you use any C/C++ standard library without adding extra "includes". No more compilation errors because missing libraries :)
+And you can make a shorter version of your template. For example, my template.
+
+``` cpp
+  #include <bits/stdc++.h>
+  #define _ ios_base::sync_with_stdio(0);cin.tie(0);
+
+  using namespace std;
+
+  int main() { 
+    return 0;
+  }
+//I tested it with the GNU/C++ compiler.
+```
+不过在国内oj中，poj，hdu 不支持这个函数.
+
+
 ## 字符串字面量&字符字面量
 
 ``` cpp
