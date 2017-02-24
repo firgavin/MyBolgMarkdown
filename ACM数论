@@ -84,6 +84,7 @@ bool IsPrime(unsigned n)
     return true; 
 } 
 ```
+二次探测定理：如果p是素数，且`0<x<p`，则方程`x^2=1(mod p)`的解为1或p-1。
 最后一种情况，面对大数时采用Miller-Rabbin素数测试法：
 Miller-Rabbin素数测试是一个不确定的算法，只能从概率意义上判定一个数可能是素数，但并不能确保。算法流程如下:
     1.选择T个随机数A，并且有A<N成立。
@@ -212,7 +213,142 @@ LL pow_mod(LL a, LL b, LL p){//a的b次方求余p
     return ret;
 }
 ```
+衍生出ll的快速乘：
+
+``` cpp
+LL mul(LL a, LL b, LL p){//快速乘，计算a*b%p 
+    LL ret = 0;
+    while(b){
+        if(b & 1) ret = (ret + a) % p;
+        a = (a + a) % p;
+        b >>= 1;
+    }
+    return ret;
+}
+```
+关于计算结果过除以MOD取余的问题：
+1、计算加法每相加一次执行一次取余；
+2、计算减法给被减数加上MOD之后先减法后取余；
+3、计算乘法每相乘一次取余一次。
+
+### GCD&LCM的相关
+计算gcd循环写法和递归写法：
+
+``` cpp
+LL gcd(LL a, LL b){
+    if(b == 0) return a;
+    else return gcd(b, a%b);
+}
+
+LL gcd(LL a, LL b){
+    return b ? gcd(b, a%b) : a;
+}
+
+LL gcd(LL a, LL b){
+    LL t;
+    while(b){
+        t = b;
+        b = a % b;
+        a = t;
+    }
+    return a;
+}
+```
+相关的公式：
+
+``` stylus
+a*b = gcd(a,b) * lcm(a,b)
+gcd(ka, kb) = k * gcd(a, b)
+lcm(ka, kb) = k * lcm(a, b)
+lcm(S/a, S/b) = S/gcd(a, b)
+```
+
+### 扩展欧几里德算法
+那么已知 a，b 求 一组解 x，y 满足 ax+by = gcd(a, b) 这个公式:
+
+![enter description here][1]
+
+代码模板：
+ 
+``` cpp
+#include<cstdio>
+typedef long long LL;
+void ex_Eulid(LL a, LL b, LL &x, LL &y, LL &d){
+    if (!b) {d = a, x = 1, y = 0;}
+    else{
+        extend_Eulid(b, a % b, y, x, d);
+        y -= x * (a / b);
+    }
+}
+int main(){
+    LL a, b, d, x, y;
+    while(~scanf("%lld%lld", &a, &b)){
+        ex_Eulid(a, b, x, y, d);
+        printf("%lld*a + %lld*b = %lld\n", x, y, d);
+    }
+}
+```
+
+### 威尔逊定理
+当且仅当p为素数时：( p -1 )! ≡ -1 ( mod p )
+或者这么写( p -1 )! ≡ p-1 ( mod p )
+若p为质数，则p能被(p-1)!+1整除
+在初等数论中，这是威尔逊给出了判定一个自然数是否为素数的充分必要条件。
+
+### 欧拉定理
+欧拉定理，也称费马-欧拉定理
+若n,a为正整数，且n,a互质，即gcd(a,n) = 1，则a^φ(n) ≡ 1 (mod n)
+ 
+φ(n) 是欧拉函数，欧拉函数是求小于等于n的数中与n互质的数的数目  
+欧拉函数是求 （小于n的数 ）中 （与n互质的数 ）的数目或者说欧拉函数是求 1到n-1 中 与n互质的数的数目。
+ 
+如果n是质数那么1到n-1所有数都是与n互质的，所以φ(n) = n-1
+
+### 中国剩余定理
+![CRT问题描述][2]
+
+CRT问题代码描述如下：
+
+``` cpp
+void extend_Euclid(LL a, LL b, LL &x, LL &y)
+{
+    if(b == 0)
+    {
+        x = 1;
+        y = 0;
+        return;
+    }
+    extend_Euclid(b, a % b, x, y);
+    LL tmp = x;
+    x = y;
+    y = tmp - (a / b) * y;
+}
+
+int CRT(int a[],int m[],int n)
+{
+    int M = 1;
+    int ans = 0;
+    for(int i=1; i<=n; i++)
+        M *= m[i];
+    for(int i=1; i<=n; i++)
+    {
+        int x, y;
+        int Mi = M / m[i];
+        extend_Euclid(Mi, m[i], x, y);
+        ans = (ans + Mi * x * a[i]) % M;
+    }
+    if(ans < 0) ans += M;
+    return ans;
+}
+```
 
 
+### 费马小定理
+假如p是质数：
+若p不能整除a，则 a^(p-1) ≡1（mod p）；
+若p能整除a，则a^(p-1) ≡0（mod p）。
+或者说，若p是质数，且a,p互质，那么 a的(p-1)次方除以p的余数恒等于1。
 
 
+  [1]: ./images/%E6%89%A9%E5%B1%95%E6%AC%A7%E5%87%A0%E9%87%8C%E5%BE%97.png "扩展欧几里得.png"
+  [2]: ./images/crt.png "crt.png"
