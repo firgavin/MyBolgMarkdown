@@ -350,107 +350,6 @@ int main(){
     init();
 }
 ```
-Meisell-Lehmer 模板，求1-n范围内的素数个数：
-
-``` cpp
-#include<bits/stdc++.h>
-
-using namespace std;
-
-typedef long long LL;
-const int N = 5e6 + 2;
-bool np[N];
-int prime[N], pi[N];
-
-int getprime() {
-    int cnt = 0;
-    np[0] = np[1] = true;
-    pi[0] = pi[1] = 0;
-    for(int i = 2; i < N; ++i) {
-        if(!np[i]) prime[++cnt] = i;
-        pi[i] = cnt;
-        for(int j = 1; j <= cnt && i * prime[j] < N; ++j) {
-            np[i * prime[j]] = true;
-            if(i % prime[j] == 0)   break;
-        }
-    }
-    return cnt;
-}
-const int M = 7;
-const int PM = 2 * 3 * 5 * 7 * 11 * 13 * 17;
-int phi[PM + 1][M + 1], sz[M + 1];
-void init() {
-    getprime();
-    sz[0] = 1;
-    for(int i = 0; i <= PM; ++i)  phi[i][0] = i;
-    for(int i = 1; i <= M; ++i) {
-        sz[i] = prime[i] * sz[i - 1];
-        for(int j = 1; j <= PM; ++j) {
-            phi[j][i] = phi[j][i - 1] - phi[j / prime[i]][i - 1];
-        }
-    }
-}
-int sqrt2(LL x) {
-    LL r = (LL)sqrt(x - 0.1);
-    while(r * r <= x)   ++r;
-    return int(r - 1);
-}
-int sqrt3(LL x) {
-    LL r = (LL)cbrt(x - 0.1);
-    while(r * r * r <= x)   ++r;
-    return int(r - 1);
-}
-LL getphi(LL x, int s) {
-    if(s == 0)  return x;
-    if(s <= M)  return phi[x % sz[s]][s] + (x / sz[s]) * phi[sz[s]][s];
-    if(x <= prime[s]*prime[s])   return pi[x] - s + 1;
-    if(x <= prime[s]*prime[s]*prime[s] && x < N) {
-        int s2x = pi[sqrt2(x)];
-        LL ans = pi[x] - (s2x + s - 2) * (s2x - s + 1) / 2;
-        for(int i = s + 1; i <= s2x; ++i) {
-            ans += pi[x / prime[i]];
-        }
-        return ans;
-    }
-    return getphi(x, s - 1) - getphi(x / prime[s], s - 1);
-}
-LL getpi(LL x) {
-    if(x < N)   return pi[x];
-    LL ans = getphi(x, pi[sqrt3(x)]) + pi[sqrt3(x)] - 1;
-    for(int i = pi[sqrt3(x)] + 1, ed = pi[sqrt2(x)]; i <= ed; ++i) {
-        ans -= getpi(x / prime[i]) - i + 1;
-    }
-    return ans;
-}
-LL lehmer_pi(LL x) {
-    if(x < N)   return pi[x];
-    int a = (int)lehmer_pi(sqrt2(sqrt2(x)));
-    int b = (int)lehmer_pi(sqrt2(x));
-    int c = (int)lehmer_pi(sqrt3(x));
-    LL sum = getphi(x, a) + LL(b + a - 2) * (b - a + 1) / 2;
-    for (int i = a + 1; i <= b; i++) {
-        LL w = x / prime[i];
-        sum -= lehmer_pi(w);
-        if (i > c) continue;
-        LL lim = lehmer_pi(sqrt2(w));
-        for (int j = i; j <= lim; j++) {
-            sum -= lehmer_pi(w / prime[j]) - (j - 1);
-        }
-    }
-    return sum;
-}
-
-int main() {
-    init();
-    LL n;
-    while(cin >> n) {
-        cout << lehmer_pi(n) << endl;
-    }
-    return 0;
-}
-```
-
-
 
 
 
@@ -489,75 +388,6 @@ LL mul(LL a, LL b, LL p){//快速乘，计算a*b%p
 1、计算加法每相加一次执行一次取余；
 2、计算减法给被减数加上MOD之后先减法后取余；
 3、计算乘法每相乘一次取余一次。
-
-### 矩阵快速幂
-算一个`n*n`矩阵的的x次方对1e9+7求余：
-``` cpp
-#include <bits/stdc++.h>
-
-using namespace std;
-
-typedef long long ll;
-const int maxn = 110;
-const int MOD = 1e9+7;
-#define mod(x) ((x)%MOD)
-
-int n;
-
-struct mat{
-    int m[maxn][maxn];
-}unit;
-
-mat operator * (mat a,mat b){
-    mat ret;
-    ll x;
-    for(int i = 0;i < n;i++){
-        for(int j = 0;j < n;j++){
-            x = 0;
-            for(int k = 0;k < n;k++)
-                x += mod((ll)a.m[i][k]*b.m[k][j]);
-            ret.m[i][j] = mod(x);
-        }
-    }
-    return ret;
-}
-
-void init_unit(){
-    for(int i = 0;i < maxn;i++)
-        unit.m[i][i] = 1;
-    return ;
-}
-
-mat pow_mat(mat a,ll n){
-    mat ret = unit;
-    while(n){
-        if(n&1) ret = ret*a;
-        a = a*a;
-        n >>= 1;
-    }
-    return ret;
-}
-
-int main(){
-    ll x;
-    init_unit();
-    while(cin>>n>>x){
-        mat a;
-        for(int i = 0;i < n;i++)
-            for(int j = 0;j < n;j++)
-                cin>>a.m[i][j];
-        a = pow_mat(a,x);
-        for(int i = 0;i < n;i++){
-            for(int j = 0;j < n;j++){
-                if(j + 1 == n)  cout << a.m[i][j] << endl;
-                else cout<<a.m[i][j]<<" ";
-            }
-        }
-    }
-    return 0;
-}
-```
-
 
 ### GCD&LCM的相关
 计算gcd循环写法和递归写法：
@@ -616,7 +446,6 @@ int main(){
     }
 }
 ```
-
 
 ### 威尔逊定理
 当且仅当p为素数时：( p -1 )! ≡ -1 ( mod p )
@@ -677,6 +506,685 @@ int CRT(int a[],int m[],int n)
 若p不能整除a，则 a^(p-1) ≡1（mod p）；
 若p能整除a，则a^(p-1) ≡0（mod p）。
 或者说，若p是质数，且a,p互质，那么 a的(p-1)次方除以p的余数恒等于1。
+
+### 高斯消元
+高斯消元是用来求线性方程组的解，行列式求值，或者矩阵求逆等等。主要有两个步骤：化行阶梯形矩阵和回带。
+高斯消元的时间复杂度为O(n^3)，以下代码中n代表方程个数，m代表未知数个数，数组f用来判断哪些未知数是
+变元，数组x用来存求得的解。
+
+``` cpp
+#include <iostream>
+#include <string.h>
+#include <algorithm>
+#include <stdio.h>
+#include <math.h>
+
+using namespace std;
+const int N = 105;
+
+int gcd(int a,int b)
+{
+    return b ? gcd(b,a%b):a;
+}
+
+int lcm(int a,int b)
+{
+    return a / gcd(a,b) * b;
+}
+
+/**n个方程，m个未知数，r代表当前处理的行，c代表当前处理的列*/
+void Gauss(int a[][N],int n,int m,int &r,int &c)
+{
+    r = c = 0;
+    for(; r<n && c<m; r++,c++)
+    {
+        int maxi = r;
+        for(int i=r+1; i<n; i++)
+            if(abs(a[i][c]) > abs(a[maxi][c]))
+                maxi = i;
+        if(maxi != r)
+        {
+            for(int i=r; i<m+1; i++)
+                swap(a[r][i],a[maxi][i]);
+        }
+        if(a[r][c] == 0)
+        {
+            r--;
+            continue;
+        }
+        for(int i=r+1; i<n; i++)
+        {
+            if(a[i][c] != 0)
+            {
+                int x = abs(a[i][c]);
+                int y = abs(a[r][c]);
+                int LCM = lcm(x,y);
+                int tx = LCM / x;
+                int ty = LCM / y;
+                if(a[i][c] * a[r][c] < 0)
+                    ty = -ty;
+                for(int j=c; j<m+1; j++)
+                    a[i][j] = a[i][j] * tx - a[r][j] * ty;
+            }
+        }
+    }
+}
+
+int Rewind(int a[][N],int x[],bool f[],int n,int m,int r,int c)
+{
+    for(int i=r; i<n; i++)
+        if(a[i][c] != 0)
+            return -1;
+    if(r < m)
+    {
+        memset(f,1,sizeof(f));
+        for(int i=r-1; i>=0; i--)
+        {
+            int id = 0;
+            int cnt = 0;
+            for(int j=0; j<m; j++)
+            {
+                if(a[i][j] != 0 && f[j])
+                {
+                    cnt++;
+                    id = j;
+                }
+            }
+            if(cnt > 1) continue;
+            int t = a[i][m];
+            for(int j=0; j<m; j++)
+            {
+                if(a[i][j] != 0 && j != id)
+                    t -= a[i][j] * x[j];
+            }
+            x[id] = t / a[i][id];
+            f[id] = 0;
+        }
+        return m - r;
+    }
+    for(int i=r-1; i>=0; i--)
+    {
+        int t = a[i][c];
+        for(int j=i+1; j<c; j++)
+        {
+            if(a[i][j] != 0)
+                t -= a[i][j] * x[j];
+        }
+        if(t % a[i][i] != 0) return -2;
+        x[i] = t / a[i][i];
+    }
+    return 0;
+}
+
+void Print(int a[][N],int n,int m)
+{
+    for(int i=0; i<n; i++)
+    {
+        for(int j=0; j<m+1; j++)
+            cout<<a[i][j]<<" ";
+        cout<<endl;
+    }
+}
+
+int a[N][N];
+int x[N];
+bool f[N];
+
+int main()
+{
+    int n,m;
+    while(cin>>n>>m)
+    {
+        for(int i=0; i<n; i++)
+        {
+            for(int j=0; j<m+1; j++)
+                cin>>a[i][j];
+        }
+        int r,c;
+        Gauss(a,n,m,r,c);
+        Rewind(a,x,f,n,m,r,c);
+        Print(a,n,m);
+        puts("");
+    }
+    return 0;
+}
+```
+
+### 求n!，C(n,m)，A(n,m)最后的非零位
+
+> 先说说怎样求n!最后的非零位吧！
+> 比如找10！最后的非零位，由于质因数2和5的组合之后末尾会产生0，所以我们先把2，5的质因子全部去掉，由于2的数目要比5多，所以我们要在最后考虑
+> 多余的2对末尾的影响。 比如：1*2*3*4*5*6*7*8*9*10去掉2，5的因子后就是：
+> 1*1*3*1*1*3*7*1*9*1，由于去掉了2，5，那么剩下的数字末尾一定是3，7，9，1四者之一，然后我们再求出这么一串数相乘以后末尾的数是几，最后再补上 2对末位的影响即可。 所以，求n！最后非零位分为4步： (1)将n！中所有的2，5因子去掉 (2)求出剩下的一串数字相乘后末尾的那个数
+> (3)由于2比5多，考虑多余的2对结果的影响 (4)输出答案 对于步骤(1)，直接计算去除就行了，很简单。
+> 对于步骤(2)，是难点，这个问题可以转化为求出这些数里面末尾是3，7，9的数字出现的次数，因为这些数的n次方是有规律的，周期为4.
+> 现在的问题就是如何求出这串数字末尾3，7，9各自出现的次数了。 一个数列实际上可以分为偶数列和奇数列。
+> 例如：1*2*3*4*5*6*7*8*9*10 分成：1，3，5，7，9和2，4，6，8，10两部分
+> 这样我们尝试分别进行统计，可以发现，实际上2，4，6，8，10中的个数也就是1，2，3，4，5中的个数，也就是说我们又把这个问题划分成了一个原来问
+> 题的子问题。
+> f(n)=f(n/2)+g(n)，g(n)表示奇数列中的数目，我们需要解决g(n)，再次观察g(n)，实际上又分成了两部分：1，3，7，9，11，13，17，19，21....................
+> 以及5的奇倍数5，15，25，........ 说明又出现了子问题。 如果要统计这个数列中末尾为x(x为1，3，7，9)的个数可以这样写：
+> g(n,x)=n/10+(n%10>=x)+g(n/5,x)
+> 这样利用了两个递归方程，我们可以在logn的时间内计算出末尾为1，3，7，9的数的个数了
+> 在得到这串数字中末尾是3，7，9的数字个数后，再利用循环节的性质可以快速求出这串数字相乘后mod10的结果，再考虑当时多余的2，便可以求出答案。
+> 知道了这个之后，求A(n,m)就不难了。 先求出n！和(n-m)!中2，5，3，7，9分别出现的次数，然后各自相减，再用循环节处理即可。
+> 这里还要注意一下：2的出现次数如果小于5的出现次数，我们可以直接输出5，如果2的出现次数等于5的出现次数，那么2的循环节不需要考虑。至于3，
+> 7，9的循环节，由于这些数的4次方末尾刚好为1，所以不需要特殊考虑
+
+题目：n!的最后的非零数字
+
+``` cpp
+#include<stdio.h>  
+#include<string.h>  
+  
+#define maxn 10001  
+  
+const int mod[20]={1,1,2,6,4,2,2,4,2,8,4,4,8,4,6,8,8,6,8,2};  
+  
+int lastdigit(char buf[])  
+{  
+    int len=strlen(buf),a[maxn],i,c,ret=1;  
+    if(len==1)return mod[buf[0]-'0'];  
+    for(i=0;i<len;i++)  
+        a[i]=buf[len-1-i]-'0';  
+    while(len)  
+    {  
+        ret=ret*mod[a[1]%2*10+a[0]]%5;  
+        for(c=0,i=len-1;i>=0;i--)  
+        {  
+            c=c*10+a[i],a[i]=c/5,c%=5;  
+        }  
+        len-=!a[len-1];  
+    }  
+    return ret+ret%2*5;  
+}  
+  
+int main()  
+{  
+    char  n[maxn];  
+    while(scanf("%s",n)!=EOF)  
+    {  
+        printf("%d\n",lastdigit(n));  
+    }  
+    return 0;  
+}  
+
+
+```
+
+
+题目：求A(n,m)最后的非零位数字。
+
+``` cpp
+#include <iostream>  
+  
+using namespace std;  
+  
+int GetCount(int n,int x)    /**计算n!中质因子x出现的次数*/  
+{  
+    if(n==0) return 0;  
+    return n/x+GetCount(n/x,x);  
+}  
+  
+int g(int n,int x)           /**计算f(1)到f(n)中奇数数列中末尾为x的数出现的次数*/  
+{  
+    if(n==0) return 0;  
+    return n/10+(n%10>=x)+g(n/5,x);  
+}  
+  
+int getx(int n,int x)        /**计算f(1)到f(n)中，末尾为x的数的出现次数*/  
+{  
+    if(n==0) return 0;  
+    return getx(n/2,x)+g(n,x);  
+}  
+  
+int table[4][4]=  
+{  
+     6,2,4,8,  
+     1,3,9,7,  
+     1,7,9,3,  
+     1,9,1,9  
+};  
+  
+int main()  
+{  
+    int n,m;  
+    int num2,num3,num5,num7,num9;  
+    while(cin>>n>>m)  
+    {  
+        num2=GetCount(n,2)-GetCount(n-m,2);  
+        num5=GetCount(n,5)-GetCount(n-m,5);  
+        num3=getx(n,3)-getx(n-m,3);  
+        num7=getx(n,7)-getx(n-m,7);  
+        num9=getx(n,9)-getx(n-m,9);  
+        int ans=1;  
+        if(num5>num2)  
+        {  
+            cout<<"5"<<endl;  
+            continue;  
+        }  
+        if(num2!=num5)  
+        {  
+            ans*=table[0][(num2-num5)%4];  
+            ans%=10;  
+        }  
+        ans*=table[1][num3%4];  
+        ans%=10;  
+        ans*=table[2][num7%4];  
+        ans%=10;  
+        ans*=table[3][num9%4];  
+        ans%=10;  
+        cout<<ans<<endl;  
+    }  
+    return 0;  
+}  
+```
+题目：求C(n,m)最后的非零位数字。
+
+``` cpp
+#include <iostream>  
+  
+using namespace std;  
+  
+int GetCount(int n,int x)    /**计算n!中质因子x出现的次数*/  
+{  
+    if(n==0) return 0;  
+    return n/x+GetCount(n/x,x);  
+}  
+  
+int g(int n,int x)           /**计算f(1)到f(n)中奇数数列中末尾为x的数出现的次数*/  
+{  
+    if(n==0) return 0;  
+    return n/10+(n%10>=x)+g(n/5,x);  
+}  
+  
+int getx(int n,int x)        /**计算f(1)到f(n)中，末尾为x的数的出现次数*/  
+{  
+    if(n==0) return 0;  
+    return getx(n/2,x)+g(n,x);  
+}  
+  
+int table[4][4]=  
+{  
+     6,2,4,8,  
+     1,3,9,7,  
+     1,7,9,3,  
+     1,9,1,9  
+};  
+  
+int main()  
+{  
+    int n,m;  
+    int num2,num3,num5,num7,num9;  
+    while(cin>>n>>m)  
+    {  
+        num2=GetCount(n,2)-GetCount(n-m,2)-GetCount(m,2);  
+        num5=GetCount(n,5)-GetCount(n-m,5)-GetCount(m,5);  
+        num3=getx(n,3)-getx(n-m,3)-getx(m,3);  
+        num7=getx(n,7)-getx(n-m,7)-getx(m,7);  
+        num9=getx(n,9)-getx(n-m,9)-getx(m,9);  
+        int ans=1;  
+        if(num5>num2)  
+        {  
+            cout<<"5"<<endl;  
+            continue;  
+        }  
+        if(num2!=num5)  
+        {  
+            ans*=table[0][(num2-num5)%4];  
+            ans%=10;  
+        }  
+        ans*=table[1][(num3%4+4)%4];  
+        ans%=10;  
+        ans*=table[2][(num7%4+4)%4];  
+        ans%=10;  
+        ans*=table[3][(num9%4+4)%4];  
+        ans%=10;  
+        cout<<ans<<endl;  
+    }  
+    return 0;  
+}  
+```
+
+### 大数开方模板
+
+``` cpp
+#include <stdio.h>  
+#include <string.h>  
+#include <stdlib.h>  
+  
+#define DEPTH 10  
+  
+typedef int BigInteger[10100];  
+  
+int comp(const BigInteger a,const int c,const int d,const BigInteger b) //大数比较  
+{  
+    int i,t=0,O=-DEPTH*2;  
+    if(b[0]-a[0]<d&&c) return 1;  
+    for(i=b[0];i>d;i--)  
+    {  
+        t=t*DEPTH+a[i-d]*c-b[i];  
+        if(t>0) return 1;  
+        if(t<O) return 0;  
+    }  
+    for(i=d;i;i--)  
+    {  
+        t=t*DEPTH-b[i];  
+        if(t>0) return 1;  
+        if(t<O) return 0;  
+    }  
+    return t>0;  
+}  
+  
+void sub(BigInteger a,const BigInteger b,const int c,const int d) //大数减  
+{  
+    int i,O=b[0]+d;  
+    for(i=1+d;i<=O;i++)  
+        if((a[i]-=b[i-d]*c)<0)  
+            a[i+1]+=(a[i]-DEPTH+1)/DEPTH,a[i]-=(a[i]-DEPTH+1)/DEPTH*DEPTH;  
+    for(;a[i]<0;a[i+1]+=(a[i]-DEPTH+1)/DEPTH,a[i]-=(a[i]-DEPTH+1)/DEPTH*DEPTH,i++);  
+    for(;!a[a[0]]&&a[0]>1;a[0]--);  
+}  
+  
+void Sqrt(BigInteger b,BigInteger a) //开平方  
+{  
+    int h,l,m,i;  
+    memset((void*)b,0,sizeof(BigInteger));  
+    for(i= b[0]=(a[0]+1)>>1;i;sub(a,b,m,i-1),b[i]+=m,i--)  
+        for(h=DEPTH-1,l=0,b[i]=m=(h+l+1)>>1;h>l;b[i]=m=(h+l+1)>>1)  
+            if(comp(b,m,i-1,a)) h=m-1;  
+            else l = m;  
+    for(;!b[b[0]]&&b[0]>1;b[0]--);  
+    for (i = 1; i <= b[0]; b[i++] >>= 1);  
+}  
+  
+char str[10100];  
+BigInteger a,b;  
+  
+int main()  
+{  
+    int t;  
+    scanf("%d", &t);  
+    while(t--)  
+    {  
+        scanf("%s",str);  
+        a[0]=strlen(str);  
+        for(int i=1; i<=a[0]; i++)  
+            a[i]=str[a[0]-i]-'0';  
+        Sqrt(b,a);  
+        for(int i=b[0]; i>=1; i--)  
+            printf("%d",b[i]);  
+        printf("\n");  
+        if(t)  
+            puts("");  
+    }  
+    return 0;  
+}  
+```
+### 高精度进制转换
+数字以a进制的形式给出，要求转化为b进制输出
+
+``` cpp
+#include <stdio.h>  
+#include <string.h>  
+#include <stdlib.h>  
+  
+#define MAXSIZE 60000  
+  
+char in[MAXSIZE];  
+int oldbase,newbase;  
+int a[MAXSIZE],b[MAXSIZE],r[MAXSIZE];  
+  
+inline int getNum(char c)  
+{  
+    if(c >= '0' && c <= '9') return c - '0';  
+    if(c >= 'A' && c<= 'Z' ) return c - 'A' + 10;  
+    return c - 'a' + 36;  
+}  
+  
+inline char getChar(int i)  
+{  
+    if(i >= 0 && i <= 9) return i + '0';  
+    if(i >= 10 && i <= 35) return i - 10 + 'A';  
+    return i - 36 + 'a';  
+}  
+  
+inline void chToNum()  
+{  
+    a[0] = strlen(in);  
+    for(int i=1;i<=a[0];i++)  
+    {  
+        a[i] = getNum(in[i-1]);  
+    }  
+}  
+  
+void alter()  
+{  
+    while(a[0] >= 1)  
+    {  
+        int i,t = 0;  
+        for(i=1;i<=a[0];i++)  
+        {  
+            t = t * oldbase + a[i];  
+            b[ ++b[0] ] = t / newbase;  
+            t %= newbase;  
+        }  
+        r[ ++r[0] ] = t;  
+        b[0] = a[0];  
+        for(i = 1; i <= b[0] && !b[i]; i++) ;  
+        for(a[0] = 0; i <= b[0]; i++) a[ ++a[0] ] = b[i];  
+        memset(b,0,sizeof(b));  
+    }  
+}  
+  
+void print()  
+{  
+    printf("%d %s\n%d ",oldbase,in,newbase);  
+    while(r[0]>=1)  
+    {  
+        printf("%c",getChar(r[ r[0]-- ]));  
+    }  
+    printf("\n\n");  
+}  
+  
+int main()  
+{  
+    int n;  
+    while(scanf("%d",&n)!=EOF)  
+    {  
+        while(n--)  
+        {  
+            scanf("%d %d %s",&oldbase,&newbase,in);  
+            chToNum();  
+            alter();  
+            print();  
+        }  
+    }  
+    return 0;  
+}  
+```
+### 动态区间求第k大的数字
+题意：N<=50000 M<=10000，给定一个数组A[1]~A[N]，有M个操作
+每个操作可以如下
+Q i j t 输出 A[I]~A[J]之间第t小的数
+C i t 将A[I]赋值为t
+
+``` cpp
+#include <cstdio>  
+#include <cstring>  
+#include <cstdlib>  
+#include <iostream>  
+#include <algorithm>  
+  
+using namespace std;  
+  
+#define N 60010  
+#define M 10010  
+#define INF 1000000000  
+  
+char ctrl[M][3];  
+int cnt,n,m;  
+int P[M],Q[M],a[N],b[N],K[M];  
+  
+struct treap  
+{  
+   int key,wei,cnt,size,ch[2];  
+}T[N * 15];  
+  
+int tree[N << 1],nodecnt,root;  
+  
+void init()  
+{  
+   T[0].size = 0;  
+   T[0].wei = -INF;  
+   nodecnt = root = 0;  
+}  
+  
+int ID(int l,int r)  
+{  
+    return l + r | l != r;  
+}  
+  
+void update(int x)  
+{  
+   T[x].size = T[T[x].ch[0]].size + T[T[x].ch[1]].size + T[x].cnt;  
+}  
+  
+void rotate(int &x,int t)  
+{  
+   int y = T[x].ch[t];  
+   T[x].ch[t] = T[y].ch[!t];  
+   T[y].ch[!t] = x;  
+   update(x);  
+   update(y);  
+   x = y;  
+}  
+  
+void insert(int &x,int t)  
+{  
+   if (!x)  
+   {  
+       x = ++ nodecnt;  
+       T[x].key = t;  
+       T[x].wei = rand();  
+       T[x].cnt = 1;  
+       T[x].ch[0] = T[x].ch[1] = 0;  
+   }  
+   else if (T[x].key == t)  
+       T[x].cnt ++;  
+   else  
+   {  
+       int k = T[x].key < t;  
+       insert(T[x].ch[k],t);  
+       if (T[x].wei < T[T[x].ch[k]].wei)  
+           rotate(x,k);  
+   }  
+   update(x);  
+}  
+  
+void erase(int &x,int t)  
+{  
+   if (T[x].key == t)  
+   {  
+       if (T[x].cnt == 1)  
+       {  
+           if (!T[x].ch[0] && !T[x].ch[1])  
+           {  
+               x = 0;  
+               return;  
+           }  
+           rotate(x,T[T[x].ch[0]].wei < T[T[x].ch[1]].wei);  
+           erase(x,t);  
+       }  
+       else T[x].cnt--;  
+   }  
+   else  
+       erase(T[x].ch[T[x].key < t],t);  
+   update(x);  
+}  
+  
+int select(int x,int t)  
+{  
+   if (!x) return 0;  
+   if (T[x].key > t) return select(T[x].ch[0],t);  
+   return T[x].cnt + T[T[x].ch[0]].size + select(T[x].ch[1],t);  
+}  
+  
+void treeins(int l,int r,int i,int x)  
+{  
+   insert(tree[ID(l,r)],x);  
+   if (l == r) return;  
+   int m = l + r >> 1;  
+   if (i <= m) treeins(l,m,i,x);  
+   else treeins(m + 1,r,i,x);  
+}  
+  
+void treedel(int l,int r,int i,int x)  
+{  
+   erase(tree[ID(l,r)],x);  
+   if (l == r) return;  
+   int m = l + r >> 1;  
+   if (i <= m) treedel(l,m,i,x);  
+   else treedel(m + 1,r,i,x);  
+}  
+  
+int query(int l,int r,int x,int y,int t)  
+{  
+   if (l == r) return l;  
+   int m = l + r >> 1;  
+   int ans = select(tree[ID(l,m)],y) - select(tree[ID(l,m)],x);  
+   if (ans >= t) return query(l,m,x,y,t);  
+   return query(m + 1,r,x,y,t - ans);  
+}  
+  
+int main()  
+{  
+   int Times;  
+   scanf("%d",&Times);  
+   while (Times --)  
+   {  
+       scanf("%d%d",&n,&m);  
+       memset(tree,0,sizeof tree);  
+       init();  
+       cnt = 0;  
+       for (int i = 1;i <= n;i ++)  
+           scanf("%d",&a[i]),b[++ cnt] = a[i];  
+       for (int i = 1;i <= m;i ++)  
+       {  
+           scanf("%s%d%d",ctrl[i],&P[i],&Q[i]);  
+           if (ctrl[i][0] == 'Q')  
+               scanf("%d",&K[i]);  
+           else  
+               b[++ cnt] = Q[i];  
+       }  
+       sort(b + 1,b + 1 + cnt);  
+       cnt = unique(b + 1,b + 1 + cnt) - b - 1;  
+       for (int i = 1;i <= n;i ++)  
+       {  
+           a[i] = lower_bound(b + 1,b + 1 + cnt,a[i]) - b;  
+           treeins(1,cnt,a[i],i);  
+       }  
+       for(int i = 1;i <= m;i ++)  
+       {  
+           if (ctrl[i][0] == 'Q')  
+           {  
+               int id = query(1,cnt,P[i] - 1,Q[i],K[i]);  
+               printf("%d\n",b[id]);  
+           }  
+           else  
+           {  
+               treedel(1,cnt,a[P[i]],P[i]);  
+               a[P[i]] = lower_bound(b + 1,b + 1 + cnt,Q[i]) - b;  
+               treeins(1,cnt,a[P[i]],P[i]);  
+           }  
+       }  
+   }  
+   return 0;  
+}  
+
+
+```
+
 
 
   [1]: ./images/%E6%89%A9%E5%B1%95%E6%AC%A7%E5%87%A0%E9%87%8C%E5%BE%97.png "扩展欧几里得.png"
