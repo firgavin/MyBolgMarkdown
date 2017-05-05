@@ -1185,6 +1185,1864 @@ int main()
 
 ```
 
+### 动态树LinkCutTree模板
+
+``` cpp
+#include <cstdio>  
+#include <algorithm>  
+#include <iostream>  
+#include <string.h>  
+#include <stdio.h>  
+const int maxn=100011;  
+const int INF=0x7fffffff;  
+using namespace std;  
+  
+struct SplayTree  
+{  
+    int val,mn,lazy;  
+    bool remark;  
+    int ch[2],pre;  
+};  
+  
+SplayTree *tree;  
+int N;  
+int val[maxn];  
+  
+void Init_Splay(int x)  
+{  
+    tree[x].ch[0]=tree[x].ch[1]=tree[x].pre=0;  
+    tree[x].remark=0;  
+    tree[x].val=val[x];  
+    tree[x].mn=val[x];  
+}  
+  
+bool IsRoot(int x)  
+{  
+    return !tree[x].pre || (tree[tree[x].pre].ch[0]!=x && tree[tree[x].pre].ch[1]!=x);  
+}  
+  
+void DynamicTree(int n)  
+{  
+    N=n;  
+    tree=new SplayTree[n+1];  
+    for(int i=0; i<=n; i++) Init_Splay(i);  
+    tree[0].val=-INF;  
+    tree[0].mn=-INF;  
+}  
+  
+void Inc(int x,int d)  
+{  
+    tree[x].val+=d;  
+    tree[x].mn+=d;  
+    tree[x].lazy+=d;  
+}  
+  
+void Rev(int x)  
+{  
+    swap(tree[x].ch[0],tree[x].ch[1]);  
+    tree[x].remark^=1;  
+}  
+  
+void PushDown(int x)  
+{  
+    if(!x) return;  
+    if(tree[x].lazy)  
+    {  
+        if(tree[x].ch[0]) Inc(tree[x].ch[0],tree[x].lazy);  
+        if(tree[x].ch[1]) Inc(tree[x].ch[1],tree[x].lazy);  
+        tree[x].lazy=0;  
+    }  
+    if(tree[x].remark)  
+    {  
+        if(tree[x].ch[0]) Rev(tree[x].ch[0]);  
+        if(tree[x].ch[1]) Rev(tree[x].ch[1]);  
+        tree[x].remark=0;  
+    }  
+}  
+  
+void Update(int x)  
+{  
+    if(!x) return;  
+    tree[x].mn=tree[x].val;  
+    if(tree[x].ch[0]) tree[x].mn=max(tree[tree[x].ch[0]].mn,tree[x].mn);  
+    if(tree[x].ch[1]) tree[x].mn=max(tree[tree[x].ch[1]].mn,tree[x].mn);  
+}  
+  
+void Rotate(int p,int c)  
+{  
+    int x=tree[p].pre,y=tree[x].pre;  
+    tree[p].pre=y;  
+    tree[x].pre=p;  
+    if(y) if(x==tree[y].ch[0]) tree[y].ch[0]=p;  
+        else if(x==tree[y].ch[1]) tree[y].ch[1]=p;  
+    tree[x].ch[!c]=tree[p].ch[c];  
+    if(tree[x].ch[!c]) tree[tree[x].ch[!c]].pre=x;  
+    tree[p].ch[c]=x;  
+    Update(x);  
+}  
+  
+int stack[maxn];  
+  
+void Splay(int x)  
+{  
+    int top=1;  
+    stack[0]=x;  
+    for(int q=x; !IsRoot(q);) stack[top++]=(q=tree[q].pre);  
+    while(top) PushDown(stack[--top]);  
+    while(!IsRoot(x))  
+    {  
+        int q=tree[x].pre;  
+        if(IsRoot(q)) if(tree[q].ch[0]==x) Rotate(x,1);  
+            else Rotate(x,0);  
+        else  
+        {  
+            if(q==tree[tree[q].pre].ch[0])  
+                if(tree[q].ch[0]==x) Rotate(q,1),Rotate(x,1);  
+                else Rotate(x,0),Rotate(x,1);  
+            else if(x==tree[q].ch[1]) Rotate(q,0),Rotate(x,0);  
+            else Rotate(x,1),Rotate(x,0);  
+        }  
+    }  
+    Update(x);  
+}  
+  
+int Head(int x)  
+{  
+    Splay(x);  
+    for(PushDown(x); tree[x].ch[0]; x=tree[x].ch[0]) PushDown(x);  
+    Splay(x);  
+    return x;  
+}  
+  
+int Expose(int x)  
+{  
+    int y;  
+    for(y=0; x; x=tree[x].pre) Splay(x),PushDown(x),tree[x].ch[1]=y,Update(y=x);  
+    return y;  
+}  
+  
+void ChangeRoot(int x)  
+{  
+    Rev(Expose(x));  
+}  
+  
+void Change(int x,int y,int val)  
+{  
+    ChangeRoot(y);  
+    Expose(x);  
+    Splay(x);  
+    tree[x].val+=val;  
+    tree[x].lazy+=val;  
+    tree[x].mn+=val;  
+//    PushDown(x);  
+//    Update(x);  
+}  
+  
+int AskMax(int x,int y)  
+{  
+    ChangeRoot(x);  
+    Expose(y);  
+    Splay(y);  
+    return tree[y].mn;  
+}  
+  
+void Link(int x,int y)//link操作即为链接两个树，那么要先进性expose操作，把到路径上的边都变为实边，这样才能进行把x调整到根部，进而通过更改祖先来进行链接  
+{  
+    ChangeRoot(x);  
+    Splay(x);  
+    tree[x].pre=y;  
+}  
+  
+void Cut(int x,int y)  
+{  
+    ChangeRoot(y);  
+    Splay(x);  
+    if(tree[x].ch[0])  
+    {  
+        tree[tree[x].ch[0]].pre=tree[x].pre;  
+        tree[x].pre=tree[x].ch[0]=0;  
+    }  
+    else tree[x].pre=0;  
+}  
+  
+int LCA(int x,int y)  
+{  
+    int p=Head(Expose(x));  
+    int q=Expose(y),w=Head(q);  
+    if(p==w) return q;  
+    return 0;  
+}  
+  
+struct data  
+{  
+    int x,y;  
+} a[maxn];  
+  
+int main()  
+{  
+    int n,m;  
+    while(scanf("%d",&n)==1)  
+    {  
+        for(int i=1; i<n; i++) scanf("%d%d",&a[i].x,&a[i].y);  
+        val[0]=val[n+1]=-INF;  
+        for(int i=1; i<=n; i++) scanf("%d",&val[i]);  
+        DynamicTree(n+1);  
+        for(int i=1; i<n; i++) Link(a[i].x,a[i].y);  
+        scanf("%d",&m);  
+        for(int i=1; i<=m; i++)  
+        {  
+            int c;  
+            int x,y,val;  
+            scanf("%d",&c);  
+            if(c==1)  
+            {  
+                scanf("%d%d",&x,&y);  
+                if(!LCA(x,y)) Link(x,y);  
+                else printf("-1\n");  
+            }  
+            else if(c==2)  
+            {  
+                scanf("%d%d",&x,&y);  
+                if(LCA(x,y) && x!=y) Cut(y,x);  
+                else printf("-1\n");  
+            }  
+            else if(c==3)  
+            {  
+                scanf("%d%d%d",&val,&x,&y);  
+                if(LCA(x,y)) Change(x,y,val);  
+                else printf("-1\n");  
+            }  
+            else if(c==4)  
+            {  
+                scanf("%d%d",&x,&y);  
+                int tmp=LCA(x,y);  
+                if(tmp) printf("%d\n",AskMax(x,y));  
+                else printf("-1\n");  
+            }  
+        }  
+        printf("\n");  
+    }  
+    return 0;  
+}  
+```
+
+### 伸展树Splay模板
+
+``` cpp
+/****************************************** 
+数据结构： 
+Splay_Tree,伸展树; 
+ 
+性质： 
+伸展树是二叉查找树的一种改进; 
+与二叉查找树一样,伸展树也具有有序性; 
+即伸展树中的每一个节点x都满足： 
+该节点左子树中的每一个元素都小于x; 
+而其右子树中的每一个元素都大于x; 
+与普通二叉查找树不同的是，伸展树可以自我调整; 
+ 
+特点： 
+伸展树并不是严格意义上的平衡树; 
+也还是极有可能退化成线性结构,但伸展操作能使它的每一次操作近似(logn); 
+ 
+伸展操作： 
+伸展操作和平衡树的保持平衡是类似的; 
+只不过他不要求保持平衡,只是相应的旋转; 
+旋转有三种情况要处理： 
+(1)Zig或Zag(节点x的父节点y是根节点) 
+(2)Zig-Zig或Zag-Zag(节点x的父节点y不是根节点，且x与y同时是各自父节点的左孩子或者同时是各自父节点的右孩子) 
+(3)Zig-Zag或Zag-Zig(节点x的父节点y不是根节点，x与y中一个是其父节点的左孩子而另一个是其父节点的右孩子) 
+即一字型旋转和之字型旋转; 
+ 
+优势： 
+能快速定位一个区间[l,r]，并且能将区间进行删除、旋转操作; 
+将第l-1个结点旋转至根(之前的Splay操作)，将第r+1个结点旋转至根的右孩子; 
+由于伸展树的本质还是二叉搜索树,则根据二叉查找树的性质可以知道; 
+在这两个结点之间，也是根的右孩子的左子树就包括节点[l,r]; 
+即很快定位了区间[l,r]，如果需要删除，直接把子树拿走即可; 
+ 
+算法测试： 
+PKU3468(A Simple Problem with Integers) 
+ 
+题目大意: 
+Q a b   ：查询区间[a,b]的和; 
+C a b x : 更新区间[a,b]，区间所有值加上x; 
+*******************************************/  
+#include<iostream>  
+#include<cstring>  
+#include<cstdio>  
+#include<algorithm>  
+using namespace std;  
+  
+#define Key_value ch[ch[root][1]][0]//进行各种操作的区间  
+  
+const int INF=0xffffff;  
+const int N=100010;  
+typedef long long LL;  
+  
+int ch[N][2];//左右孩子(0为左孩子，1为右孩子)  
+int pre[N];//父结点  
+int key[N];//数据域  
+int size[N];//树的规模  
+int val[N];  
+int add[N];  
+int a[N];//结点元素  
+LL sum[N];//子树结点和  
+int root;  //根结点  
+int tot;//结点数量  
+int n,q;  
+  
+void Push_Up(int u)//通过孩子结点更新父结点  
+{  
+    size[u]=size[ch[u][0]]+size[ch[u][1]]+1;  
+    sum[u]=sum[ch[u][0]]+sum[ch[u][1]]+val[u]+add[u];  
+}  
+  
+void Push_Down(int u)//将延迟标记更新到孩子结点  
+{  
+    if(add[u])  
+    {  
+        val[u]+=add[u];  
+        add[ch[u][0]]+=add[u];  
+        add[ch[u][1]]+=add[u];  
+        sum[ch[u][0]]+=(LL)add[u]*size[ch[u][0]];  
+        sum[ch[u][1]]+=(LL)add[u]*size[ch[u][1]];  
+        add[u]=0;  
+    }  
+}  
+  
+void New_Node(int &u,int f,int c)//新建一个结点，f为父节点  
+{  
+    u=++tot;  
+    val[u]=sum[u]=c;  
+    pre[u]=f;  
+    size[u]=1;  
+    ch[u][1]=ch[u][0]=add[u]=0;  
+}  
+  
+void Build_Tree(int &u,int l,int r,int f)//建树，中间结点先建立，然后分别对区间两端在左右子树建立  
+{  
+    if(l>r)  
+        return;  
+    int m=(l+r)>>1;  
+    New_Node(u,f,a[m]);  
+    if(l<m)  
+        Build_Tree(ch[u][0],l,m-1,u);  
+    if(r>m)  
+        Build_Tree(ch[u][1],m+1,r,u);  
+    Push_Up(u);  
+}  
+  
+void Rotate(int x,int c)//旋转操作，c=0 表示左旋，c=1 表示右旋  
+{  
+    int y=pre[x];  
+    Push_Down(y);// 先将Y结点的标记向下传递（因为Y在上面）  
+    Push_Down(x);//再把X的标记向下传递  
+    ch[y][!c]=ch[x][c];//类似SBT，要把其中一个分支先给父节点  
+    pre[ch[x][c]]=y;  
+    pre[x]=pre[y];  
+    if(pre[y])//如果父节点不是根结点，则要和父节点的父节点连接起来  
+    {  
+        ch[pre[x]][ch[pre[y]][1]==y]=x;  
+    }  
+    pre[y]=x;  
+    ch[x][c]=y;  
+    Push_Up(y);  
+}  
+  
+void Splay(int x,int f)//Splay操作,把根结点x转到结点f的下面  
+{  
+    Push_Down(x);  
+    while(pre[x]!=f)  
+    {  
+        int y=pre[x];  
+        if(pre[y]==f)//父结点的父亲即为f，执行单旋转  
+            Rotate(x,ch[y][0]==x);  
+        else  
+        {  
+            int z=pre[y];  
+            int g=(ch[z][0]==y);  
+            if(ch[y][g]==x)  
+                Rotate(x,!g),Rotate(x,g);//之字形旋转  
+            else Rotate(y,g),Rotate(x,g);//一字形旋转  
+        }  
+    }  
+    Push_Up(x);// 最后再维护X结点  
+    if(f==0)//更新根结点  
+    {  
+        root=x;  
+    }  
+}  
+  
+void Rotate_Under(int k,int f)//把第k位的数伸展到f下方  
+{  
+    //找到处在中序遍历第k个结点，并将其旋转到结点f 的下面  
+    int p=root;//从根结点开始  
+    Push_Down(p);// 由于要访问p的子结点，将标记下传  
+    while(size[ch[p][0]]!=k)//p的左子树的大小  
+    {  
+        if(k<size[ch[p][0]])// 第k个结点在p左边，向左走  
+        {  
+            p=ch[p][0];  
+        }  
+        else//否则在右边,而且在右子树中，这个结点不再是第k个  
+        {  
+            k-=(size[ch[p][0]]+1);  
+            p=ch[p][1];  
+        }  
+        Push_Down(p);  
+    }  
+    Splay(p,f);//执行旋转  
+}  
+  
+int Insert(int k)//插入结点  
+{  
+    int r=root;  
+    while(ch[r][key[r]<k])  
+        r=ch[r][key[r]<k];  
+    New_Node(ch[r][k>key[r]],r,k);  
+    //将新插入的结点更新至根结点  
+    //Push_Up(r);  
+    Splay(ch[r][k>key[r]],0);  
+    return 1;  
+}  
+  
+int Get_Pre(int x)//找前驱，即左子树的最右结点  
+{  
+    int tmp=ch[x][0];  
+    if(tmp==0)  
+    return INF;  
+    while(ch[tmp][1])  
+    {  
+        tmp=ch[tmp][1];  
+    }  
+    return key[x]-key[tmp];  
+}  
+  
+int Get_Next(int x)//找后继，即右子树的最左结点  
+{  
+    int tmp=ch[x][1];  
+    if(tmp==0)  
+    return INF;  
+    while(ch[tmp][0])  
+    {  
+        tmp=ch[tmp][0];  
+    }  
+    return key[tmp]-key[x];  
+}  
+  
+LL Query(int l,int r)//查询[l,r]之间的和  
+{  
+    Rotate_Under(l-1,0);  
+    Rotate_Under(r+1,root);  
+    return sum[Key_value];  
+}  
+  
+void Update(int l,int r)//更新  
+{  
+    int k;  
+    scanf("%d",&k);  
+    Rotate_Under(l-1,0);  
+    Rotate_Under(r+1,root);  
+    add[Key_value]+=k;  
+    sum[Key_value]+=size[Key_value]*k;  
+}  
+  
+void Init()//初始化  
+{  
+    for(int i=0; i<n; i++)  
+        scanf("%d",&a[i]);  
+    ch[0][0]=ch[0][1]=pre[0]=size[0]=0;  
+    add[0]=sum[0]=0;  
+    root=tot=0;  
+    New_Node(root,0,-1);  
+    New_Node(ch[root][1],root,-1);   //头尾各加入一个空位  
+    size[root]=2;  
+    Build_Tree(Key_value,0,n-1,ch[root][1]);  //让所有数据夹在两个-1之间  
+    Push_Up(ch[root][1]);  
+    Push_Up(root);  
+}  
+  
+int main()  
+{  
+    while(~scanf("%d%d",&n,&q))  
+    {  
+        Init();  
+        while(q--)  
+        {  
+            char op;  
+            scanf(" %c",&op);  
+            int x,y;  
+            scanf("%d%d",&x,&y);  
+            if(op=='Q')  
+                printf("%lld\n",Query(x,y));  
+            else  
+                Update(x,y);  
+        }  
+    }  
+    return 0;  
+}  
+```
+
+### BST(Binary Search Tree 二叉查找树模版)
+
+``` cpp
+/****************************************** 
+数据结构： 
+BST(Binary Search Tree),二叉查找树; 
+ 
+性质： 
+若结点的左子树不空，则左子树上所有结点的值均小于它的根结点的值; 
+若结点的右子树不空，则右子树上所有结点的值均大于它的根结点的值; 
+该结点的左、右子树也分别为二叉查找树; 
+ 
+遍历： 
+对于一个已知的二叉查找树,从小到大输出其节点的值; 
+只需对其进行二叉树的中序遍历即可; 
+即递归地先输出其左子树,再输出其本身,然后输出其右子树; 
+遍历的时间复杂度为O(n); 
+ 
+查找： 
+对于一个已知的二叉查找树x; 
+在其中查找特定的值k,函数Search返回指向值为k的节点指针; 
+若找不到则返回0,算法时间复杂度为O(h),h为树的高度; 
+理想情况下时间复杂度为lgn; 
+ 
+最大值和最小值： 
+要查找二叉查找树中具有最小值的元素; 
+只要从根节点开始,沿着左子树找到最左边的节点就可以了; 
+反之沿着右子树查找则可以求最大值; 
+ 
+插入： 
+从根节点开始插入; 
+如果要插入的值小于等于当前节点的值，在当前节点的左子树中插入; 
+如果要插入的值大于当前节点的值，在当前节点的右子树中插入; 
+如果当前节点为空节点，在此建立新的节点，该节点的值为要插入的值，左右子树为空，插入成功; 
+ 
+删除： 
+如果该没有子女，直接删除; 
+如果该结点只有一个子女，则删除它，将其子女的父亲改为它的父亲; 
+如果该结点有两个子女，先用其后继替换该节点，其后继的数据一并加在其后; 
+*******************************************/  
+#include<iostream>  
+#include<cstring>  
+#include<cstdlib>  
+#include<cstdio>  
+#include<climits>  
+#include<algorithm>  
+using namespace std;  
+  
+const int N = 100000;  
+int key[N], l[N], r[N], p[N];  
+int u, node;  
+  
+int Search(int x, int k)//查询  
+{  
+    if(x == 0 || k == key[x])  
+        return x;  
+    if(k < key[x])  
+        return Search(l[x], k);  
+    else  
+        return Search(r[x], k);  
+}  
+  
+int Iterative_Search(int x, int k)//非递归版本的查询  
+{  
+    while(x != 0 && k != key[x])  
+        if(k < key[x])  
+            x = l[x];  
+        else  
+            x = r[x];  
+    return x;  
+}  
+  
+int Minimum(int x)  
+{  
+    while(l[x] != 0)  
+        x = l[x];  
+    return x;  
+}  
+  
+int Maximum(int x)  
+{  
+    while(r[x] != 0)  
+        x = r[x];  
+    return x;  
+}  
+  
+int Successor(int x)  
+{  
+    if(r[x] != 0)  
+        return Minimum(r[x]);  
+    int y = p[x];  
+    while(y != 0 && x == r[y])  
+    {  
+        x = y;  
+        y = p[y];  
+    }  
+    return y;  
+}  
+  
+int Predecessor(int x)  
+{  
+    if(l[x] != 0)  
+        return Maximum(l[x]);  
+    int y = p[x];  
+    while(y != 0 && x == l[y])  
+    {  
+        x = y;  
+        y = p[y];  
+    }  
+    return y;  
+}  
+  
+void Insert(int &T, int v)//插入结点  
+{  
+    if(T == 0)  
+        key[T = ++node] = v;  
+    else if(v <= key[T])  
+    {  
+        p[l[T]] = T;  
+        Insert(l[T], v);  
+    }  
+    else  
+    {  
+        p[r[T]] = T;  
+        Insert(r[T], v);  
+    }  
+}  
+  
+void Iterative_Insert(int T, int v)//非递归版本插入结点  
+{  
+    int y = 0;  
+    int x = T;  
+    int z = ++node;  
+    key[z] = v;  
+    while(x != 0)  
+    {  
+        y = x;  
+        if(key[z] < key[x])  
+            x = l[x];  
+        else  
+            x = r[x];  
+    }  
+    p[z] = y;  
+    if(y == 0)  
+        key[T] = z;  
+    else if(key[z] < key[y])  
+        l[y] = z;  
+    else  
+        r[y] = z;  
+}  
+  
+void Transplant(int T, int u, int v)//移植过程;  
+//把一棵子树u归并到另一棵子树v中，u的父亲变为v的父亲，u的父亲就有了v作为其孩子。  
+{  
+    if(p[u] == 0)  
+        T = v;  
+    else if(u == l[p[u]])  
+        l[p[u]] = v;  
+    else  
+        r[p[u]] = v;  
+    if(v != 0)  
+        p[v] = p[u];  
+}  
+  
+void Delete(int T, int z)//删除结点  
+{  
+    if(l[z] == 0)  
+        Transplant(T, z, r[z]);  
+    else if(r[z] == 0)  
+        Transplant(T, z, l[z]);  
+    else  
+    {  
+        int y = Minimum(r[z]);  
+        if(p[y] != z)  
+        {  
+            Transplant(T, y, r[y]);  
+            r[y] = r[z];  
+            p[r[y]] = y;  
+        }  
+        Transplant(T, z, y);  
+        l[y] = l[z];  
+        p[l[y]] = y;  
+    }  
+}  
+  
+  
+int main()  
+{  
+    int n;  
+    scanf("%d",&n);  
+    for(int i=0; i<n; i++)  
+    {  
+        int k;  
+        scanf("%d",&k);  
+        Insert(u, k);  
+    }  
+    Delete(u, Search(u, 1));  
+    printf("%d\n",Search(u,2));  
+    printf("%d\n",Maximum(u));  
+    return 0;  
+}  
+```
+### SBT模版(Size Balanced Tree)
+
+``` cpp
+/************************************************* 
+数据结构： 
+SBT(Size Balanced Tree),又称傻逼树; 
+ 
+数据域： 
+值域key,左孩子left,右孩子right,保持平衡的size; 
+ 
+性质： 
+每棵子树的大小不小于其兄弟的子树大小; 
+ 
+插入： 
+插入算法先简单插入节点，然后调用一个维护过程以保持性质; 
+ 
+删除： 
+删除操作与普通维护size域的二叉查找树相同; 
+ 
+最大值和最小值： 
+由于SBT本身已经维护了size域; 
+所以只需用Select(T,1)来求最大值; 
+Select(T,T.size)求最小值; 
+其中Select(T,k)函数返回树T在第k位置上的节点值; 
+**************************************************/  
+#include<iostream>  
+#include<cstring>  
+#include<cstdlib>  
+#include<cstdio>  
+#include<climits>  
+#include<algorithm>  
+using namespace std;  
+  
+const int N = 100000;  
+int key[N], lefts[N], rights[N], size[N];  
+int u;//根结点  
+int node;  
+  
+inline void Left_Rotate(int &x)  
+{  
+    int k = rights[x];  
+    rights[x] = lefts[k];  
+    lefts[k] = x;  
+    size[k] = size[x];  
+    size[x] = size[lefts[x]] + size[rights[x]] + 1;  
+    x = k;  
+}  
+  
+inline void Right_Rotate(int &y)  
+{  
+    int k = lefts[y];  
+    lefts[y] = rights[k];  
+    rights[k] = y;  
+    size[k] = size[y];  
+    size[y] = size[lefts[y]] + size[rights[y]] + 1;  
+    y = k;  
+}  
+  
+void Maintain(int &u, bool flag)//维护  
+{  
+    if(flag == false)  
+    {  
+        if(size[lefts[lefts[u]]] > size[rights[u]])  
+            Right_Rotate(u);  
+        else  
+        {  
+            if(size[rights[lefts[u]]] > size[rights[u]])  
+            {  
+                Left_Rotate(lefts[u]);  
+                Right_Rotate(u);  
+            }  
+            else return;  
+        }  
+    }  
+    else  
+    {  
+        if(size[rights[rights[u]]] > size[lefts[u]])  
+            Left_Rotate(u);  
+        else  
+        {  
+            if(size[lefts[rights[u]]] > size[lefts[u]])  
+            {  
+                Right_Rotate(rights[u]);  
+                Left_Rotate(u);  
+            }  
+            else return;  
+        }  
+    }  
+    Maintain(lefts[u], false);  
+    Maintain(rights[u], true);  
+    Maintain(u, true);  
+    Maintain(u, false);  
+}  
+  
+void Insert(int &u, int v)//插入结点  
+{  
+    if(u == 0)  
+    {  
+        key[u = ++node] = v;  
+        size[u] = 1;  
+    }  
+    else  
+    {  
+        size[u]++;  
+        if(v < key[u])  
+            Insert(lefts[u], v);  
+        else  
+            Insert(rights[u], v);  
+        Maintain(u, v >= key[u]);  
+    }  
+}  
+  
+int Delete(int &u, int v)//删除结点  
+{  
+    size[u]--;  
+    if( (v == key[u]) || (v < key[u] && lefts[u] == 0) || (v > key[u] && rights[u] == 0) )  
+    {  
+        int r = key[u];  
+        if(lefts[u] == 0 || rights[u] == 0)  
+            u = lefts[u] + rights[u];  
+        else  
+            key[u] = Delete(lefts[u], key[u] + 1);  
+        return r;  
+    }  
+    else  
+    {  
+        if(v < key[u])  
+            return Delete(lefts[u], v);  
+        else  
+            return Delete(rights[u], v);  
+    }  
+}  
+  
+int Search(int x, int k)//查询  
+{  
+    if(x == 0 || k == key[x])  
+        return x;  
+    if(k < key[x])  
+        return Search(lefts[x], k);  
+    else  
+        return Search(rights[x], k);  
+}  
+  
+int Select(int u, int k)//返回树在第k位置上的结点值  
+{  
+    int r = size[lefts[u]] + 1;  
+    if(k == r)  
+        return key[u];  
+    else if(k < r)  
+        return Select(lefts[u], k);  
+    else  
+        return Select(rights[u], k - r);  
+}  
+  
+int Successor(int u, int k)//查询结点k的后继  
+{  
+    if(u == 0)  
+        return k;  
+    if(key[u] <= k)  
+        return Successor(rights[u], k);  
+    else  
+    {  
+        int r = Successor(lefts[u], k);  
+        if(r == k)  
+            return key[u];  
+        else  
+            return r;  
+    }  
+}  
+  
+int Predecessor(int u, int k)//查询结点k的前驱  
+{  
+    if(u == 0)  
+        return k;  
+    if(key[u] >= k)  
+        return Predecessor(lefts[u], k);  
+    else  
+    {  
+        int r = Predecessor(rights[u], k);  
+        if(r == k)  
+            return key[u];  
+        else  
+            return r;  
+    }  
+}  
+  
+int Rank(int u, int k)//排名(rank),也叫秩,求整棵树中从大到小排序的第k位元素;  
+{  
+    if(u==0)  
+        return 1;  
+    if(key[u] >= k)  
+        return Rank(lefts[u], k);  
+    else  
+        return size[lefts[u]] + Rank(rights[u], k) + 1;  
+}  
+  
+int main()  
+{  
+    int n;  
+    scanf("%d",&n);  
+    for(int i=0; i<n; i++)  
+    {  
+        int cmd,x;  
+        scanf("%d%d",&cmd,&x);  
+        switch(cmd)  
+        {  
+        case 1:  
+            Insert(u,x);  
+            break;  
+        case 2:  
+            Delete(u,x);  
+            break;  
+        case 3:  
+            printf("%d\n", Search(u,x));  
+            break;  
+        case 4:  
+            printf("%d\n", Rank(u,x));  
+            break;  
+        case 5:  
+            printf("%d\n", Select(u,x));  
+            break;  
+        case 6:  
+            printf("%d\n", Predecessor(u,x));  
+            break;  
+        case 7:  
+            printf("%d\n", Successor(u,x));  
+            break;  
+        }  
+    }  
+    return 0;  
+}  
+```
+
+### 划分树（求区间第k大）
+求区间[p,q]的第K大就等于求区间[p,q]的第q-p+1-k小。
+
+``` cpp
+#include <iostream>  
+#include <string.h>  
+#include <algorithm>  
+#include <stdio.h>  
+  
+using namespace std;  
+const int N = 100005;  
+  
+int sorted[N];  
+int Tree[20][N];  
+int toLeft[20][N];  
+  
+void Build(int k,int l,int r)  
+{  
+    if(l==r) return;  
+    int mid=(l+r)>>1;  
+    int i,t;  
+    t=mid-l+1;  
+    for(i=l;i<=r;i++)  
+       if(Tree[k][i]<sorted[mid])  
+          t--;  
+    int L=l;  
+    int R=mid+1;  
+    for(i=l;i<=r;i++)  
+    {  
+       if(i==l)  
+          toLeft[k][i]=0;  
+       else  
+          toLeft[k][i]=toLeft[k][i-1];  
+       if(Tree[k][i]<sorted[mid])  
+       {  
+           toLeft[k][i]++;  
+           Tree[k+1][L++]=Tree[k][i];  
+       }  
+       else if(Tree[k][i]>sorted[mid])  
+       {  
+           Tree[k+1][R++]=Tree[k][i];  
+       }  
+       else  
+       {  
+           if(t!=0)  
+           {  
+               t--;  
+               toLeft[k][i]++;  
+               Tree[k+1][L++]=Tree[k][i];  
+           }  
+           else  
+               Tree[k+1][R++]=Tree[k][i];  
+       }  
+    }  
+    Build(k+1,l,mid);  
+    Build(k+1,mid+1,r);  
+}  
+  
+int Query(int k,int l,int r,int p,int q,int t)  
+{  
+    if(p==q) return Tree[k][p];  
+    int s,ss;  
+    int mid=(l+r)>>1;  
+    if(l==p)  
+    {  
+        s=0;  
+        ss=toLeft[k][q];  
+    }  
+    else  
+    {  
+        s=toLeft[k][p-1];  
+        ss=toLeft[k][q]-s;  
+    }  
+    int L,R;  
+    if(t<=ss)  
+    {  
+        L=l+s;  
+        R=l+s+ss-1;  
+        return Query(k+1,l,mid,L,R,t);  
+    }  
+    else  
+    {  
+        L=mid-l+1+p-s;  
+        R=mid-l+1+q-s-ss;  
+        return Query(k+1,mid+1,r,L,R,t-ss);  
+    }  
+}  
+  
+int main()  
+{  
+    int n,m,i,j;  
+    while(~scanf("%d",&n))  
+    {  
+        for(i=1;i<=n;i++)  
+        {  
+            scanf("%d",&Tree[0][i]);  
+            sorted[i]=Tree[0][i];  
+        }  
+        std::sort(sorted+1,sorted+n+1);  
+        Build(0,1,n);  
+        scanf("%d",&m);  
+        int p,q,k;  
+        while(m--)  
+        {  
+            scanf("%d%d%d",&p,&q,&k);  
+            p++;q++;k--;  
+            printf("%d\n",Query(0,1,n,p,q,q-p+1-k));  
+        }  
+    }  
+    return 0;  
+}  
+```
+
+### 求逆序数（线段树）
+
+``` cpp
+#include <stdio.h>  
+#define maxn 55555  
+  
+#define lson l,m,rt<<1  
+#define rson m+1,r,rt<<1|1  
+  
+int sum[maxn<<2];  
+int x[maxn];  
+  
+int min(int a,int b)  
+{  
+    return a<b? a:b;  
+}  
+  
+void PushUP(int rt)  
+{  
+    sum[rt]=sum[rt<<1]+sum[rt<<1|1];  
+}  
+  
+void Build(int l,int r,int rt)  
+{  
+    sum[rt]=0;  
+    if(l==r)  
+        return;  
+    int m=(l+r)>>1;  
+    Build(lson);  
+    Build(rson);  
+}  
+  
+void Update(int p,int l,int r,int rt)  
+{  
+    if(l==r)  
+    {  
+        sum[rt]++;  
+        return;  
+    }  
+    int m=(l+r)>>1;  
+    if(p<=m)  
+        Update(p,lson);  
+    else  
+        Update(p,rson);  
+    PushUP(rt);  
+}  
+  
+int Query(int L,int R,int l,int r,int rt)  
+{  
+    if(L<=l&&R>=r)  
+        return sum[rt];  
+    int m=(l+r)>>1;  
+    int ret=0;  
+    if(L<=m)      ret+=Query(L,R,lson);  
+    if(R>m)       ret+=Query(L,R,rson);  
+    return ret;  
+}  
+  
+int main()  
+{  
+    int n,i;  
+    while(~scanf("%d",&n))  
+    {  
+        Build(0,n-1,1);  
+        int sum=0;  
+        for(i=0;i<n;i++)  
+        {  
+            scanf("%d",&x[i]);  
+            sum+=Query(x[i],n-1,0,n-1,1);  
+            Update(x[i],0,n-1,1);  
+        }  
+        int ret=sum;  
+        for(i=0;i<n;i++)  
+        {  
+            sum+=n-x[i]-x[i]-1;  
+            ret=min(ret,sum);  
+        }  
+        printf("%d\n",ret);  
+    }  
+    return 0;  
+}  
+```
+
+### ST算法解决RMQ问题
+
+> 关于ST算法，实际上它本身并不难，它的思想是动态规划。主要用来求RMQ问题，时间复杂度为O(NlgN+M)  关于RMQ问题描述：
+> 输入N个数和M次询问，每次询问一个区间[L,R],求第L个数到R个数之间的最大值，或者是求最小值。   它的原理阐述如下：
+> 对于一个数组A[0...N-1]，我们用f[i][j]表示A[i]到A[i+2^j-1]，这个范围内的最大值。
+> 由于此区间的元素个数很明显为2^j个，所以我们又可以从中间平分为两部分，这样每部分又有2^(j-1)个元素，这样我们就知道区间[i,i+2^j-1]可以分为[i,i+2^(j-1)-1]和[i+2^(j-1),i+2^j-1]两部分，我们只需要求出后面两个区间最大值的较大值，就可以知道前面区间的最大值了。
+> 所以到了这里，很明显可以写出状态转移方程： f[i][j]=max(f[i][j-1]，f[i+2^(j-1)][j-1])
+> 当然很明显知道初始化f[i][0]=A[i] 当然上面i，j的范围是多少呢？
+> 现在我们来分析一下：我们已经说了如果用上述原理一个区间的元素是2^j个，而可以知道2^j<=N的，所以这样就得到j<=log(N)/log(2);
+> 当然j还大于等于1 对于i，就直接有`i+2^j-1<N`就行了。 到了这里，我们就可以把f[i][j]求出来了。 接下来就是query()了。
+> 这个怎么办呢，其实很容易，我们先求出满足条件2^x=R-L+1的最大x
+> 这样我们我们就可以把区间[L,R]求最值问题转化为了求区间[L,L+2^x-1]和区间[R-2^x+1,R]最大值的较大值了，为什么可以这样做，因为这两个区间中间有重叠。
+> 但是这两个区间的并一定等于区间[L,R]，所以到了这里ST算法的原理基本常阐述完毕了。 剩下的就是代码实现了。
+
+``` cpp
+#include <stdio.h>  
+#include <math.h>  
+#define N 1005  
+  
+int m,n;  
+int a[N];  
+int f[N][N];  
+  
+int max(int a,int b)  
+{  
+    return a>b? a:b;  
+}  
+  
+void ST()  
+{  
+    int i,j;  
+    for(i=0;i<n;i++)  
+       f[i][0]=a[i];  
+    for(j=1;j<=(int)((log((double)n)/log(2.0)));j++)  
+    {  
+        for(i=0;i+(1<<j)-1<n;i++)  
+           f[i][j]=max(f[i][j-1],f[i+(1<<(j-1))][j-1]);  
+    }  
+}  
+  
+int query(int L,int R)  
+{  
+    int x=(int)(log((double)(R-L+1))/log(2.0));  
+    return max(f[L][x],f[R-(1<<x)+1][x]);  
+}  
+  
+int main()  
+{  
+    int i,L,R;  
+    while(~scanf("%d%d",&n,&m))  
+    {  
+        for(i=0;i<n;i++)  
+           scanf("%d",&a[i]);  
+        ST();  
+        while(m--)  
+        {  
+            scanf("%d%d",&L,&R);  
+            printf("%d\n",query(L-1,R-1));  
+        }  
+    }  
+    return 0;  
+}  
+```
+### Manacher算法
+题意：给定一个长度不超过110000的字符串T，求它的最长回文子串。
+求最长回文子串可以用后缀数组，扩展KMP算法，Manacher算法，其中Manacher算法无论时间还是编程复杂度都是最好的，其时间复杂度为O(n)
+
+``` cpp
+#include <iostream>  
+#include <string.h>  
+#include <stdio.h>  
+  
+using namespace std;  
+const int N=200005<<1;  
+  
+char T[N];   //原字符串  
+char S[N];   //转换后的字符串  
+int  R[N];   //回文半径  
+  
+void Init(char *T)  
+{  
+    S[0]='$';  
+    int len=strlen(T);  
+    for(int i=0; i<=len; i++)  
+    {  
+        S[2*i+1]='#';  
+        S[2*i+2]=T[i];  
+    }  
+}  
+  
+void Manacher(char *S)  
+{  
+    int k=0,mx=0;  
+    int len=strlen(S);  
+    for(int i=0; i<len; i++)  
+    {  
+        if(mx>i)  
+            R[i]=R[2*k-i]<mx-i? R[2*k-i] : mx-i;  
+        else  
+            R[i]=1;  
+        while(S[i+R[i]]==S[i-R[i]])  
+            R[i]++;  
+        if(R[i]+i>mx)  
+        {  
+            mx=R[i]+i;  
+            k=i;  
+        }  
+    }  
+}  
+  
+int main()  
+{  
+    while(~scanf("%s", T))  
+    {  
+        Init(T);  
+        Manacher(S);  
+        int len=strlen(S);  
+        int ans=1;  
+        for(int i=0; i<len; i++)  
+            ans=R[i]>ans? R[i] : ans;  
+        printf("%d\n", ans-1);  
+    }  
+    return 0;  
+}  
+```
+
+### AC自动机
+AC自动机算法分为3步：构造Trie树，构造失败指针和模式匹配过程。
+AC自动机简介： 
+首先简要介绍一下AC自动机：Aho-Corasick automation，该算法在1975年产生于贝尔实验室，是著名的多模匹配算法之一。一个常见的例子就是给出n个单词，再给出一段包含m个字符的文章，让你找出有多少个单词在文章里出现过。要搞懂AC自动机，先得有字典树Trie和KMP模式匹配算法的基础知识。KMP算法是单模式串的字符匹配算法，AC自动机是多模式串的字符匹配算法。
+**AC自动机的构造：**
+1.构造一棵Trie，作为AC自动机的搜索数据结构。
+2.构造fail指针，使当前字符失配时跳转到具有最长公共前后缀的字符继续匹配。如同 KMP算法一样， AC自动机在匹配时如果当前字符匹配失败，那么利用fail指针进行跳转。由此可知如果跳转，跳转后的串的前缀，必为跳转前的模式串的后缀并且跳转的新位置的深度（匹配字符个数）一定小于跳之前的节点。所以我们可以利用 bfs在 Trie上面进行 fail指针的求解。
+3.扫描主串进行匹配。
+**AC自动机详讲：**
+我们给出5个单词，say，she，shr，he，her。给定字符串为yasherhs。问多少个单词在字符串中出现过。
+**一、Trie**
+首先我们需要建立一棵Trie。但是这棵Trie不是普通的Trie，而是带有一些特殊的性质。
+首先会有3个重要的指针，分别为p, p->fail, temp。
+1.指针p，指向当前匹配的字符。若p指向root，表示当前匹配的字符序列为空。（root是Trie入口，没有实际含义）。
+2.指针p->fail，p的失败指针，指向与字符p相同的结点，若没有，则指向root。
+3.指针temp，测试指针（自己命名的，容易理解！~），在建立fail指针时有寻找与p字符匹配的结点的作用，在扫描时作用最大，也最不好理解。
+对于Trie树中的一个节点，对应一个序列s[1...m]。此时，p指向字符s[m]。若在下一个字符处失配，即p->next[s[m+1]] == NULL，则由失配指针跳到另一个节点(p->fail)处，该节点对应的序列为s[i...m]。若继续失配，则序列依次跳转直到序列为空或出现匹配。在此过程中，p的值一直在变化，但是p对应节点的字符没有发生变化。在此过程中，我们观察可知，最终求得得序列s则为最长公共后缀。另外，由于这个序列是从root开始到某一节点，则说明这个序列有可能是某些序列的前缀。
+再次讨论p指针转移的意义。如果p指针在某一字符s[m+1]处失配(即p->next[s[m+1]] == NULL)，则说明没有单词s[1...m+1]存在。此时，如果p的失配指针指向root，则说明当前序列的任意后缀不会是某个单词的前缀。如果p的失配指针不指向root，则说明序列s[i...m]是某一单词的前缀，于是跳转到p的失配指针，以s[i...m]为前缀继续匹配s[m+1]。
+对于已经得到的序列s[1...m]，由于s[i...m]可能是某单词的后缀，s[1...j]可能是某单词的前缀，所以s[1...m]中可能会出现单词。此时，p指向已匹配的字符，不能动。于是，令temp = p，然后依次测试s[1...m], s[i...m]是否是单词。
+构造的Trie为：
+
+**二、构造失败指针**
+用BFS来构造失败指针，与KMP算法相似的思想。
+首先，root入队，第1次循环时处理与root相连的字符，也就是各个单词的第一个字符h和s，因为第一个字符不匹配需要重新匹配，所以第一个字符都指向root（root是Trie入口，没有实际含义）失败指针的指向对应下图中的(1)，(2)两条虚线；第2次进入循环后，从队列中先弹出h，接下来p指向h节点的fail指针指向的节点，也就是root；p=p->fail也就是p=NULL说明匹配序列为空，则把节点e的fail指针指向root表示没有匹配序列，对应图-2中的(3)，然后节点e进入队列；第3次循环时，弹出的第一个节点a的操作与上一步操作的节点e相同，把a的fail指针指向root，对应图-2中的(4)，并入队；第4次进入循环时，弹出节点h(图中左边那个)，这时操作略有不同。由于p->next[i]!=NULL(root有h这个儿子节点，图中右边那个)，这样便把左边那个h节点的失败指针指向右边那个root的儿子节点h，对应图-2中的(5)，然后h入队。以此类推：在循环结束后，所有的失败指针就是图-2中的这种形式。
+
+**三、扫描**
+构造好Trie和失败指针后，我们就可以对主串进行扫描了。这个过程和KMP算法很类似，但是也有一定的区别，主要是因为AC自动机处理的是多串模式，需要防止遗漏某个单词，所以引入temp指针。
+匹配过程分两种情况：(1)当前字符匹配，表示从当前节点沿着树边有一条路径可以到达目标字符，此时只需沿该路径走向下一个节点继续匹配即可，目标字符串指针移向下个字符继续匹配；(2)当前字符不匹配，则去当前节点失败指针所指向的字符继续匹配，匹配过程随着指针指向root结束。重复这2个过程中的任意一个，直到模式串走到结尾为止。
+ 对照上图，看一下模式匹配这个详细的流程，其中模式串为yasherhs。对于i=0,1。Trie中没有对应的路径，故不做任何操作；i=2,3,4时，指针p走到左下节点e。因为节点e的count信息为1，所以cnt+1，并且讲节点e的count值设置为-1，表示改单词已经出现过了，防止重复计数，最后temp指向e节点的失败指针所指向的节点继续查找，以此类推，最后temp指向root，退出while循环，这个过程中count增加了2。表示找到了2个单词she和he。当i=5时，程序进入第5行，p指向其失败指针的节点，也就是右边那个e节点，随后在第6行指向r节点，r节点的count值为1，从而count+1，循环直到temp指向root为止。最后i=6,7时，找不到任何匹配，匹配过程结束。
+题目大意：给你很多个单词，然后给你一篇文章，问给出的单词在文章中出现的次数。
+
+``` cpp
+#include <iostream>  
+#include <string.h>  
+#include <stdio.h>  
+#include <queue>   
+  
+using namespace std;  
+  
+const int N=500010;  
+  
+char S[1000010];  
+char keyword[51];  
+  
+class Trie  
+{  
+    public:  
+        int count;  
+        Trie *fail;  
+        Trie *next[26];  
+        Trie()  
+        {  
+            count=0;  
+            fail=NULL;  
+            memset(next,NULL,sizeof(next));  
+        }  
+};  
+  
+Trie *root;  
+  
+queue<Trie*> Q;  
+  
+void Insert(char *S)  
+{  
+    int len=strlen(S);  
+    Trie *p=root;  
+    for(int i=0; i<len; i++)  
+    {  
+        int id=S[i]-'a';  
+        if(p->next[id]==NULL)  
+            p->next[id]=new Trie();  
+        p=p->next[id];  
+    }  
+    p->count++;  
+}  
+  
+void Build_AC()  
+{  
+    Q.push(root);  
+    root->fail=NULL;  
+    while(!Q.empty())  
+    {  
+        Trie *p=NULL;  
+        Trie *tmp=Q.front();  
+        Q.pop();  
+        for(int i=0; i<26; i++)  
+        {  
+            if(tmp->next[i])  
+            {  
+                if(tmp==root) tmp->next[i]->fail=root;  
+                else  
+                {  
+                    p=tmp->fail;  
+                    while(p)  
+                    {  
+                        if(p->next[i])  
+                        {  
+                            tmp->next[i]->fail=p->next[i];  
+                            break;  
+                        }  
+                        p=p->fail;  
+                    }  
+                    if(p==NULL) tmp->next[i]->fail=root;  
+                }  
+                Q.push(tmp->next[i]);  
+            }  
+        }  
+    }  
+}  
+  
+int Query()  
+{  
+    Trie *p=root;  
+    int index,result=0;  
+    int len=strlen(S);  
+    for(int i=0; i<len; i++)  
+    {  
+        index=S[i]-'a';  
+        while(p->next[index]==NULL&&p!=root) p=p->fail;  
+        p=p->next[index];  
+        if(p==NULL) p=root;  
+        Trie *temp=p;  
+        while(temp!=root&&temp->count!=-1)  
+        {  
+            result+=temp->count;  
+            temp->count=-1;  
+            temp=temp->fail;  
+        }  
+    }  
+    return result;  
+}  
+  
+int main()  
+{  
+    int t,n;  
+    scanf("%d",&t);  
+    while(t--)  
+    {  
+        root=new Trie();  
+        scanf("%d",&n);  
+        getchar();  
+        while(n--)  
+        {  
+            gets(keyword);  
+            Insert(keyword);  
+        }  
+        Build_AC();  
+        scanf("%s",S);  
+        printf("%d\n",Query());  
+    }  
+    return 0;  
+}  
+```
+### 扩展KMP算法
+扩展KMP的应用：
+ 给出模板串S和串T，长度分别为Slen和Tlen，要求在线性时间内，对于每个`S[i]（0<=i<Slen)`，求出S[i..Slen-1]与T的最长公共前缀长度，记为extend[i]（或者说，extend[i]为满足S[i..i+z-1]==T[0..z-1]的最大的z值）。
+扩展KMP可以用来解决很多字符串问题，如求一个字符串的最长回文子串和最长重复子串。
+ 
+题意：给一个数字，每一次把它的最后一位拿到最前面，一直那样下去，分别求形成的数字小于，等于和大于原来数的个数。
+例如：134可以形成134，341，413三个数，所以分别是1，1，1。
+ 
+分析：
+由于长度为len的字符串形成题目要求的串的个数为len，那么我们可以把原来的两个串T连接起来形成字符串S，然后找S的每个后缀的前len个元素即可。这里主要是如何比较的问题，对于字符串的比较，我们可以先求出他们的最长公共前缀长度，然后只需要比较一次就可以知道结果了。那么最长公共前缀怎么求，由于这里是一个串T与另一个串S，来求S的所有后缀与T的最长公共前缀长度，所以用扩展
+KMP。如果extend[i]>=len，就说明与原来的相等了，否则如果`S[i+extend[i]]<T[extend[i]]`就说明小于，否则就是大
+于。
+
+``` cpp
+#include <stdio.h>  
+#include <string.h>  
+#define N 500010  
+  
+int next[N];  
+int nextval[N];  
+int extend[N];  
+  
+char S[N];  
+char T[N];  
+  
+void GetNext(char *T)  
+{  
+    int a=0;  
+    int Tlen=strlen(T);  
+    next[0]=Tlen;  
+    while(a<Tlen-1&&T[a]==T[a+1]) a++;  
+    next[1]=a;  
+    a=1;  
+    for(int k=2;k<Tlen;k++)  
+    {  
+        int p=a+next[a]-1,L=next[k-a];  
+        if((k-1)+L>=p)  
+        {  
+            int j=(p-k+1)>0? p-k+1:0;  
+            while(k+j<Tlen&&T[k+j]==T[j]) j++;  
+            next[k]=j;  
+            a=k;  
+        }  
+        else next[k]=L;  
+    }  
+}  
+  
+void GetExtend(char *S,char *T)  
+{  
+    int a=0;  
+    GetNext(T);  
+    int Slen=strlen(S);  
+    int Tlen=strlen(T);  
+    int MinLen=Slen<Tlen? Slen:Tlen;  
+    while(a<MinLen&&S[a]==T[a]) a++;  
+    extend[0]=a;  
+    a=0;  
+    for(int k=1;k<Slen;k++)  
+    {  
+        int p=a+extend[a]-1,L=next[k-a];  
+        if((k-1)+L>=p)  
+        {  
+            int j=(p-k+1)>0? p-k+1:0;  
+            while(k+j<Slen&&j<Tlen&&S[k+j]==T[j]) j++;  
+            extend[k]=j;  
+            a=k;  
+        }  
+        else extend[k]=L;  
+    }  
+}  
+  
+void NextVal(char *T)  
+{  
+    int i=0,j=-1;  
+    nextval[0]=-1;  
+    int Tlen=strlen(T);  
+    while(i<Tlen)  
+    {  
+        if(j==-1||T[i]==T[j])  
+        {  
+            i++;  
+            j++;  
+            if(T[i]!=T[j]) nextval[i]=j;  
+            else  nextval[i]=nextval[j];  
+        }  
+        else j=nextval[j];  
+    }  
+}  
+  
+int main()  
+{  
+    int Slen,Tlen,i;  
+    int t,tt=1;  
+    scanf("%d",&t);  
+    while(t--)  
+    {  
+        scanf("%s",S);  
+        strcpy(T,S);  
+        strcat(S,T);  
+        GetExtend(S,T);  
+        Tlen=strlen(T);  
+        Slen=strlen(S);  
+        NextVal(T);  
+        int MOD=Tlen-nextval[Tlen];  
+        int temp=1;  
+        if(Tlen%MOD==0) temp=Tlen/MOD;  
+        int ans1=0,ans2=0,ans3=0;  
+        for(i=0;i<Tlen;i++)  
+        {  
+            if(extend[i]>=Tlen) ans2++;  
+            else if(S[i+extend[i]]<T[extend[i]]) ans1++;  
+            else ans3++;  
+        }  
+        printf("Case %d: %d %d %d\n",tt++,ans1/temp,ans2/temp,ans3/temp);  
+    }  
+    return 0;  
+}  
+```
+
+### KMP字符串匹配
+**next数组的意义：** 
+当一个字符串以0为起始下标时，next[i]可以描述为"不为自身的最大首尾重复子串长度"。
+也就是说，从模式串T[0...i-1]的第一个字符开始截取一段长度为m(m < i-1)子串，再截取模式串T[0...i-1]的最后m个
+字符作为子串，如果这两个子串相等，则该串就是一个首尾重复子串。我们的目的就是要找出这个最大的m值。
+ 
+ 
+**next数组的应用：**
+POJ2406，给一个长度为1000000的字符串，求它由多少个最小的循环节组成，例如：ababab，它由3个ab组成，所以答案是3，再比如abcdabcdab，它只能由一个abcdabcdab组成，所以答案是1.
+ 
+关于最小的循环节，有一个重要的性质：tmp = len-next[len]为字符串str的最小循环节，且有：IF len MOD tmp == 0 最小循环周期 ans = len MOD tmp;ELSE 最小循环周期ans = 1;
+ 
+注意在求循环节问题时的next数组不要优化，在做匹配时才优化。
+ 那么POJ1961就很好做了，也是一样的求最小循环周期，题意是给一个长度为1000000的字符串，然后求它所有前缀的不为1的最小循环周期。POJ2752，题意：给一个字符串S，输出该字符串中既是前缀又是后缀的所有子串的长度，按照从小到大输出。当然，我们用KMP可以这样做，先求next数组，然后next[len]就是除了S本身外满足条件的最长子串长度，然后我们按照它的next数组往前跳就找到所有的了。
+
+``` cpp
+void GetNext(char *T)  
+{  
+    int i=0,j=-1;  
+    next[0]=-1;  
+    int Tlen=strlen(T);  
+    while(i<Tlen)  
+    {  
+        if(j==-1||T[i]==T[j])  
+        {  
+            i++; j++;  
+            if(T[i]!=T[j])  
+                next[i]=j;  
+            else  
+                next[i]=next[j];  
+        }  
+        else j=next[j];  
+    }  
+}  
+  
+bool KMP(char *S,char *T)  
+{  
+    int i=0,j=0;  
+    GetNext(T);  
+    int Slen=strlen(S);  
+    int Tlen=strlen(T);  
+    while(i<Slen&&j<Tlen)  
+    {  
+        if(j==-1||S[i]==T[j])  
+        {  
+            i++;  
+            j++;  
+        }  
+        else  
+        {  
+            j=next[j];  
+        }  
+    }  
+    if(j>=Tlen) return true;  
+    else return false;  
+}  
+```
+### Trie树（字典树）
+
+``` cpp
+class Trie  
+{  
+    public:  
+       int v;  
+       Trie *next[26];  
+       Trie()  
+       {  
+           v=0;  
+           memset(next,NULL,sizeof(next));  
+       }  
+};  
+  
+Trie *root;  
+  
+void Insert(char *S)  
+{  
+    int len=strlen(S);  
+    Trie *p=root;  
+    for(int i=0;i<len;i++)  
+    {  
+        int id=S[i]-'a';  
+        if(p->next[id]==NULL)  
+            p->next[id]=new Trie();  
+        p=p->next[id];  
+    }  
+    p->v++;  
+}  
+  
+int Find(char *S)  //如果找到S串，返回它在字典树中出现次数，否则返回0  
+{  
+    Trie *p=root;  
+    int len=strlen(S);  
+    for(int i=0;i<len;i++)  
+    {  
+        int id=S[i]-'a';  
+        p=p->next[id];  
+        if(p==NULL) return 0;  
+    }  
+    return p->v;  
+}  
+  
+int Delete(Trie *T)      //删除整棵字典树  
+{  
+    if(T==NULL) return 0;  
+    for(int i=0;i<26;i++)  
+        if(T->next[i]!=NULL)  
+            Delete(T->next[i]);  
+    delete T;  
+    return 0;  
+}  
+  
+root=new Trie();  //main中的初始化  
+```
+
+### 字符串哈希处理
+字符串Hash无论是在ACM竞赛中还是在工程中都有着广泛的应用，所以很有必要掌握好它的用法。主要分为两个部
+分：Hash映射和冲突处理。而本文主要来详细讲解Hash映射的方法及应用，下篇文章将会介绍如何处理冲突。
+ 
+对于字符串Hash来说都是把字符串映射为一个整数，这一步是通过Hash函数来进行的。常用的Hash函数具体有：
+SDBMHash，RSHash，JSHash，ELFHash，BKDRHash，DJBHash等等。接下来只详细介绍ELFHash函数的原理
+及应用。
+ 
+ELFHash函数的代码如下：
+
+``` cpp
+unsigned int ELFhash(char *str)  
+{  
+    unsigned int h = 0;  
+    unsigned int x;  
+    while(*str)  
+    {  
+        h = (h << 4) + *str++;  
+        x = h & 0xF0000000L;  
+        if(x)  
+        {  
+            h ^= x>>24;  
+            h &= ~x;  
+        }  
+    }  
+    return h & 0x7FFFFFFF;  
+}  
+```
+
+题意：给定一些数字，可能有前导零，求这些数字中出现次数最多的数字的次数。
+
+``` cpp
+#include <iostream>  
+#include <string.h>  
+#include <stdio.h>  
+  
+using namespace std;  
+const int N = 1000005;  
+const int MOD = 100007;  
+  
+int hash[N], cnt[N];  
+  
+unsigned int ELFhash(char *str)  
+{  
+    unsigned int h = 0;  
+    unsigned int x;  
+    while(*str)  
+    {  
+        h = (h << 4) + *str++;  
+        x = h & 0xF0000000L;  
+        if(x)  
+        {  
+            h ^= x>>24;  
+            h &= ~x;  
+        }  
+    }  
+    return h & 0x7FFFFFFF;  
+}  
+  
+int HashHit(char *str)  
+{  
+    while(*str == '0') str++;  
+    int k = ELFhash(str);  
+    int t = k % MOD;  
+    while(hash[t] != k && hash[t] != -1)  
+        t = (t + 10) % MOD;  
+    if(hash[t] == -1)  
+    {  
+        cnt[t] = 1;  
+        hash[t] = k;  
+    }  
+    else cnt[t]++;  
+    return cnt[t];  
+}  
+  
+int main()  
+{  
+    int n;  
+    char str[105];  
+    while(scanf("%d", &n)!=EOF)  
+    {  
+        int ans = 1;  
+        memset(hash,-1,sizeof(hash));  
+        while(n--)  
+        {  
+            scanf("%s", str);  
+            ans = max(ans, HashHit(str));  
+        }  
+        printf("%d\n", ans);  
+    }  
+    return 0;  
+}  
+```
+对于Hash，我们是怎样来处理冲突的。现在就来介绍一些经典的Hash冲突处理的方法。主要包括：
+ 
+（1）开放地址法
+ 基本思想：当发生地址冲突时，按照某种方法继续探测Hash表中其它存储单元，直到找到空位置为止。描述如下 其中，为关键字的直接Hash地址，为Hash表的长度，为每次再探测时的地址增量。
+ 
+（2）拉链法
+拉链法又叫链地址法，适合处理冲突比较严重的情况。基本思想是把所有关键字为同义词的记录存储在同一个线性链表中。
+
+``` cpp
+#include <iostream>  
+#include <string.h>  
+#include <stdio.h>  
+  
+using namespace std;  
+const int N = 35;  
+  
+struct node  
+{  
+    int key;    //关键字  
+    int len;    //每个节点引出的链表长度  
+    bool flag;  //有数据的标志  
+    node *next;  
+};  
+  
+node list[N];  
+  
+void Init(node list[])  
+{  
+    for(int i=0; i<N; i++)  
+    {  
+        list[i].len = 0;  
+        list[i].flag = 0;  
+        list[i].next = NULL;  
+    }  
+}  
+  
+void Insert(node list[], int val, int m)  
+{  
+    int id = val % m;  
+    if(!list[id].flag)  
+    {  
+        list[id].key = val;  
+        list[id].flag = 1;  
+    }  
+    else  
+    {  
+        node *p = new node();  
+        p->key = val;  
+        p->next = list[id].next;  
+        list[id].next = p;  
+    }  
+}  
+  
+//输出HashTable  
+void Print(node list[], int m)  
+{  
+    for(int i=0; i<m; i++)  
+    {  
+        node *p = list[i].next;  
+        if(!list[i].flag)  
+            printf("The %dth record is NULL!\n", i);  
+        else  
+        {  
+            printf("The %dth record is %d", i, list[i].key);  
+            list[i].len++;  
+            while(p)  
+            {  
+                printf("->%d", p->key);  
+                p = p->next;  
+                list[i].len++;  
+            }  
+            puts("");  
+        }  
+    }  
+}  
+  
+//计算平均查找长度  
+double ASL(node list[], int m)  
+{  
+    double ans = 0;  
+    for(int i=0; i<m; i++)  
+        ans += (list[i].len + 1) * list[i].len / 2.0;  
+    return ans / m;  
+}  
+  
+int main()  
+{  
+    int n, m;  
+    Init(list);  
+    scanf("%d %d", &n, &m);  
+    for(int i=0; i<n; i++)  
+    {  
+        int val;  
+        scanf("%d", &val);  
+        Insert(list, val, m);  
+    }  
+    Print(list, m);  
+    printf("The Average Search Length is %.5lf\n", ASL(list, m));  
+    return 0;  
+}  
+  
+/** 
+12 11 
+47 7 29 11 16 92 22 8 3 37 89 50 
+*/  
+```
+（3）再哈希法
+再哈希法又叫双哈希法，有多个不同的Hash函数，当发生冲突时，使用第二个，第三个，....，等哈希函数计算地址，直到无冲突。虽然不易发生聚集，但是增加了计算时间。
+ 
+（4）建立公共溢出区 
+建立公共溢出区的基本思想是：假设哈希函数的值域是[1,m-1]，则设向量HashTable[0...m-1]为基本
+表，每个分量存放一个记录，另外设向量OverTable[0...v]为溢出表，所有关键字和基本表中关键字为同义
+词的记录，不管它们由哈希函数得到的哈希地址是什么，一旦发生冲突，都填入溢出表。
+
+
+
+
+
+
+
+
+
+
 
 
   [1]: ./images/%E6%89%A9%E5%B1%95%E6%AC%A7%E5%87%A0%E9%87%8C%E5%BE%97.png "扩展欧几里得.png"
