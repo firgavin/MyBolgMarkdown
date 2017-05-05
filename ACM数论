@@ -1185,6 +1185,394 @@ int main()
 
 ```
 
+### 线段树
+线段树整体维护的是从1到n下标的元素(当然也可以维护0到n-1号元素或者其他任意一个区间的元素)但是拥有1到大约`3*n`的树节点，每个树节点维护一段[L，R]的区间内所有的元素信息(没有0号树节点,因为如果你要指定0号树节点为根的话，那么i号树节点的左右儿子就不是`i*2`节点和`i*2+1`节点了)。而树节点中每个节点i都有它需要维护的区间[l, r]。
+
+对于实际的问题，比如求区间和，我们可以通过查询对应节点的sum[i]值得到回答。比如求区间颜色覆盖种类，我们也可以通过查询覆盖区间的对应信息，然后做统计而得出。也就是说：问题的解答要么存在于节点维护的信息中，要么存在于query的一次查询统计过程中。
+
+在做线段树问题时，首先要考虑线段树每个树节点需要维护什么信息？之后考虑如何通过线段树维护的节点信息来解决我们要求得问题？
+
+``` cpp
+#include<cstdio>  
+#include<cstring>  
+using namespace std;  
+const int maxn=50000+5;  
+  
+//线段树需要维护的信息  
+int sum[maxn*4];  
+#define lson i*2, l, m  
+#define rson i*2+1, m+1, r  
+  
+//i节点收集子节点的统计结果  
+void PushUp(int i)  
+{  
+    sum[i]=sum[i*2]+sum[i*2+1];  
+}  
+  
+//递归建立线段树  
+void build(int i,int l,int r)  
+{  
+    if(l==r)  
+    {  
+        scanf("%d",&sum[i]);  
+        return ;  
+    }  
+  
+    int m=(l+r)/2;  
+    build(lson);  
+    build(rson);  
+    PushUp(i);//收集子节点的结果  
+}  
+  
+//在当前区间[l, r]内查询区间[ql, qr]间的目标值  
+//且能执行这个函数的前提是：[l,r]与[ql,qr]的交集非空  
+//其实本函数返回的结果也是 它们交集的目标值  
+int query(int ql,int qr,int i,int l,int r)  
+{  
+    //目的区间包含当前区间  
+    if(ql<=l && r<=qr) return sum[i];  
+  
+    int m=(l+r)/2;  
+    int res=0;  
+    if(ql<=m) res += query(ql,qr,lson);  
+    if(m<qr) res += query(ql,qr,rson);  
+    return res;  
+}  
+  
+//update这个函数就有点定制的意味了  
+//本题是单点更新，所以是在区间[l,r]内使得第id数的值+val  
+//如果是区间更新，可以update的参数需要将id变为ql和qr  
+void update(int id,int val,int i,int l,int r)  
+{  
+    if(l==r)  
+    {  
+        sum[i] += val;  
+        return ;  
+    }  
+  
+    int m=(l+r)/2;  
+    if(id<=m) update(id,val,lson);  
+    else update(id,val,rson);  
+    PushUp(i);//时刻记住维护i节点统计信息正确性  
+}  
+  
+  
+int main()  
+{  
+    int T;  
+    scanf("%d",&T);  
+    for(int kase=1; kase<=T; kase++)  
+    {  
+        printf("Case %d:\n",kase);  
+  
+        int n;//节点总数  
+        scanf("%d",&n);  
+        build(1,1,n);//建立线段树  
+  
+        char str[20];  
+        int u,v;  
+        while(scanf("%s",str)==1 && str[0]!='E')  
+        {  
+            scanf("%d%d",&u,&v);  
+  
+            if(str[0]=='Q') printf("%d\n",query(u,v,1,1,n));  
+            else if(str[0]=='A') update(u,v,1,1,n);  
+            else update(u,-v,1,1,n);  
+        }  
+    }  
+    return 0;  
+}  
+```
+
+
+### Splay树
+
+``` cpp
+/* 
+ * POJ 3468 A Simple Problem with Integers 
+ * 经典的线段树题目，用splay tree来作为入门题 
+ * 成段更新+区间求和 
+ * 题目给定了n个数A1,A2,...An，有以下两种操作 
+ * C a b c:把c加入到Aa,Aa+1,..Ab中 
+ * Q a b:查询Aa,Aa+1,..Ab的和 
+ * 需要的变量：pre,ch,size(这三个基本都要),key(保存结点的值),sum(子树值和),add(增量的标记) 
+ * (一般标记类，正确的做法都是要先更新掉该点，标记是标记没有更新子结点) 
+ */  
+  
+#include <iostream>  
+#include <stdio.h>  
+#include <string.h>  
+#include <algorithm>  
+using namespace std;  
+#define Key_value ch[ch[root][1]][0]  
+const int MAXN=100010;  
+int pre[MAXN],ch[MAXN][2],size[MAXN],root,tot1;//父结点、左右孩子、子树规模、根结点、结点数量  
+int key[MAXN];//该点的值  
+int add[MAXN];//增量的延迟标记  
+long long sum[MAXN];//子树的和  
+int s[MAXN],tot2;//内存池、内存池容量（这题用不到，如果有删除操作，内存不够可以这样  
+//s中存的是被回收的内存,从后面可以看到,tot2不为0的时候优先使用s[tot2]=x中的pre[x],ch[x],size[x]等,  
+//否则就使用tot1++之后产生的数x的对应位置  
+int a[MAXN];//初始的数组，建树时候用  
+int n,q;  
+//debug部分  
+void Treavel(int x)  
+{  
+    if(x)  
+    {  
+        Treavel(ch[x][0]);  
+        printf("结点%2d:左儿子 %2d 右儿子 %2d 父结点 %2d size=%2d,key=%2d add=%2d sum=%I64d\n",x,ch[x][0],ch[x][1],pre[x],size[x],key[x],add[x],sum[x]);  
+        Treavel(ch[x][1]);  
+    }  
+}  
+void debug()  
+{  
+    printf("root:%d\n",root);  
+    Treavel(root);  
+}  
+//以上是debug  
+void NewNode(int &r,int father,int k)//一个是调用的时候注意变量顺序，还有r必须引用&  
+{  
+    if(tot2)r=s[tot2--];//取得时候是tot2--,那么存的时候就要是++tot2,tot2与tot1都是从1开始计数的  
+    else r=++tot1;  
+    pre[r]=father;  
+    size[r]=1;//这个不能忘记 ,一定是1，否则可能出错  
+    key[r]=k;  
+    add[r]=0;  
+    sum[r]=0;  
+    ch[r][0]=ch[r][1]=0;  
+}  
+//给r为根的子树增加值，一定把当前结点的全部更新掉，再加个延迟标记表示儿子结点没有更新  
+void Update_Add(int r,int ADD)  
+{  
+    if(r==0)return;  
+    add[r]+=ADD;  
+    key[r]+=ADD;  
+    sum[r]+=(long long)ADD*size[r];  
+}  
+//通过孩子结点更新父亲结点  
+void Push_Up(int r)  
+{  
+    size[r]=size[ch[r][0]]+size[ch[r][1]]+1;  
+    sum[r]=sum[ch[r][0]]+sum[ch[r][1]]+key[r];  
+}  
+//将延迟标记更新到孩子结点  
+void Push_Down(int r)  
+{  
+    if(add[r])  
+    {  
+        Update_Add(ch[r][0],add[r]);  
+        Update_Add(ch[r][1],add[r]);  
+        add[r]=0;  
+    }  
+}  
+//建树区间[l,r]  
+//先建立中间结点，再两端的方法  
+void Build(int &x,int l,int r,int father)  
+{  
+    if(l>r)return;  
+    int mid=(l+r)/2;  
+    NewNode(x,father,a[mid]);  
+    Build(ch[x][0],l,mid-1,x);  
+    Build(ch[x][1],mid+1,r,x);  
+    Push_Up(x);  
+}  
+//初始化，前后各加一个king结点  
+void Init()  
+{  
+    for(int i=1;i<=n;i++)scanf("%d",&a[i]);  
+    root=tot1=tot2=0;  
+    ch[root][0]=ch[root][1]=pre[root]=size[root]=add[root]=sum[root]=0;  
+    key[root]=0;  
+    NewNode(root,0,-1);  
+    NewNode(ch[root][1],root,-1);//头尾各加入一个空位  
+    Build(Key_value,1,n,ch[root][1]);  
+    Push_Up(ch[root][1]);  
+    Push_Up(root);  
+}  
+//旋转，0为左旋，1为右旋  该部分基本固定  
+void Rotate(int x,int kind)  
+{  
+    int y=pre[x];  
+    Push_Down(y);  
+    Push_Down(x);//先把y的标记向下传递，再把x的标记往下传递  
+    ch[y][!kind]=ch[x][kind];  
+    pre[ch[x][kind]]=y;  
+    if(pre[y])  
+        ch[pre[y]][ch[pre[y]][1]==y]=x;  
+    pre[x]=pre[y];  
+    ch[x][kind]=y;  
+    pre[y]=x;  
+    Push_Up(y);//维护y结点   x节点的信息不用PushUp吗?可以证明这里除了x节点维护的信息不对外,其他所有点信息都正确  
+    //Push_Up(x);//这个可以不写,详见Crash:运用伸展树解决数列维护问题 论文,但是写了也不会多多少时间消耗  
+}  
+//Splay调整，将结点r调整到goal下面  
+void Splay(int r,int goal)  
+{  
+    Push_Down(r);  
+    while(pre[r]!=goal)  
+    {  
+        if(pre[pre[r]]==goal)  
+            Rotate(r,ch[pre[r]][0]==r);  
+        else  
+        {  
+            int y=pre[r];  
+            int kind=ch[pre[y]][0]==y;  
+            if(ch[y][kind]==r)//之字形  
+            {  
+                Rotate(r,!kind);  
+                Rotate(r,kind);  
+            }  
+            else               //一字型  
+            {  
+                Rotate(y,kind);  
+                Rotate(r,kind);  
+            }  
+        }  
+    }  
+    Push_Up(r);  
+    if(goal==0)root=r;  
+}  
+//得到第k个结点编号  
+int Get_Kth(int r,int k)  
+{  
+    Push_Down(r);  
+    int t=size[ch[r][0]]+1;  
+    if(t==k)return r;  
+    if(t>k)return Get_Kth(ch[r][0],k);  
+    else return Get_Kth(ch[r][1],k-t);  
+}  
+int Get_Min(int r)//得到以r为根的第一个节点编号  
+{  
+    Push_Down(r);  
+    while(ch[r][0])  
+    {  
+        r=ch[r][0];  
+        Push_Down(r);  
+    }  
+    return r;  
+}  
+int Get_Max(int r)//得到以r为根的最后一个节点编号  
+{  
+    Push_Down(r);  
+    while(ch[r][1])  
+    {  
+        r=ch[r][1];  
+        Push_Down(r);  
+    }  
+    return r;  
+}  
+//区间增加一个值  
+//注意因为在前面增加了个结点，所以把第l个结点旋转到根结点，第r+2个结点旋转到根结点的右孩子，  
+//那么Key_value(ch[ch[root][1]][0]刚好就是区间[l,r]  
+void ADD(int l,int r,int D)  
+{  
+    Splay(Get_Kth(root,l),0);//第l个点到根结点  
+    Splay(Get_Kth(root,r+2),root);//第r+2个点到根结点的右孩子  
+    Update_Add(Key_value,D);  
+    Push_Up(ch[root][1]);  
+    Push_Up(root);  
+}  
+//查询区间的和  
+long long Query_Sum(int l,int r)  
+{  
+    Splay(Get_Kth(root,l),0);//第l个点到根结点  
+    Splay(Get_Kth(root,r+2),root);//第r+2个点到根结点的右孩子  
+    return sum[Key_value];  
+}  
+  
+int main()  
+{  
+    //freopen("in.txt","r",stdin);  
+    //freopen("out.txt","w",stdout);  
+    while(scanf("%d%d",&n,&q)==2)  
+    {  
+        Init();//这个不能忘记  
+        while(q--)  
+        {  
+            char op[20];  
+            int x,y,z;  
+            scanf("%s",op);  
+            if(op[0]=='Q')  
+            {  
+                scanf("%d%d",&x,&y);  
+                printf("%I64d\n",Query_Sum(x,y));  
+            }  
+            else  
+            {  
+                scanf("%d%d%d",&x,&y,&z);  
+                ADD(x,y,z);  
+            }  
+        }  
+    }  
+    return 0;  
+}  
+```
+
+### 并查集
+题意： 给出一个有N`（0<N<=10000）`个顶点的无向图(顶点编号0到N-1), 然后依次给出它的M`（0<M<=100000）`条边，要求依次输出当删除给出的前k（1<=K<=M）条边后，该图的连通分量总数。
+输入：第一行是N和M，然后是M行数`（X,Y）（0<=X,Y<N）`表示X与Y有边。
+输出：依次输出所求的连通分量数。
+
+分析：
+当删除前K条边时图所剩的连通分量数 就是 N个点孤立时只添加后M-K条边时，所具有的连通分量数。
+所以仅需倒序插入每条边，分别保存插入边后新图所具有的连通分量数目在数组内，然后输出数组即可。
+进阶1：如果题目要求每次输出删除前i条边后的连通分量数目且i是随机给的呢？ 只需要将所有i按从大到小排序，然后离线处理所有的i询问之后按序输出所有结果就行。
+进阶2：如果题目要求在线处理每条请求呢？即要求及时给出每个i对应的连通分量数目。只需要预处理所有可能的i询问结果，然后输出指定询问结果即可。
+
+``` cpp
+#include<cstdio>  
+#include<cstring>  
+#include<algorithm>  
+using namespace std;  
+const int maxn=10000+5;  
+const int maxm=100000+5;  
+  
+int n,m;  
+int ans[maxm];//ans[i]==x表删除前i条边所具有的连通分量  
+struct Edge//边  
+{  
+    int u,v;  
+}edges[maxm];  
+  
+//并查集  
+int fa[maxn];  
+int findset(int x){ return fa[x]==-1?x:fa[x]=findset(fa[x]); }  
+int bind(int u,int v)  
+{  
+    int fu=findset(u);  
+    int fv=findset(v);  
+    if(fu!=fv)  
+    {  
+        fa[fu]=fv;  
+        return 1;  
+    }  
+    return 0;  
+}  
+  
+int main()  
+{  
+    while(scanf("%d%d",&n,&m)==2)  
+    {  
+        memset(fa,-1,sizeof(fa));  
+        for(int i=1;i<=m;i++)  
+            scanf("%d%d",&edges[i].u,&edges[i].v);  
+  
+        ans[m]=n;  
+        for(int i=m-1;i>=0;i--)  
+        {  
+            int u=edges[i+1].u, v=edges[i+1].v;  
+            ans[i]=ans[i+1]-bind(u,v);  
+        }  
+  
+        for(int i=1;i<=m;i++)  
+            printf("%d\n",ans[i]);  
+    }  
+    return 0;  
+}  
+```
+
+
 ### 动态树LinkCutTree模板
 
 ``` cpp
@@ -2594,6 +2982,112 @@ int main()
     return 0;  
 }  
 ```
+封装类的AC自动机：
+
+``` cpp
+#include<cstdio>  
+#include<cstring>  
+#include<queue>  
+using namespace std;  
+const int maxnode=11000;  
+const int sigma_size=26;  
+struct AC_Automata  
+{  
+    int ch[maxnode][sigma_size];  
+    int val[maxnode];   // 每个字符串的结尾结点都有一个非0的val  
+    int f[maxnode];     // fail函数  
+    int last[maxnode];  // last[i]=j表j节点表示的单词是i节点单词的后缀，且j节点是单词节点  
+    int sz;  
+  
+    //初始化0号根节点的相关信息  
+    void init()  
+    {  
+        sz=1;  
+        memset(ch[0],0,sizeof(ch[0]));  
+        val[0]=0;  
+    }  
+  
+    //insert负责构造ch与val数组  
+    //插入字符串,v必须非0表示一个单词节点  
+    void insert(char *s,int v)  
+    {  
+        int n=strlen(s),u=0;  
+        for(int i=0; i<n; i++)  
+        {  
+            int id=s[i]-'a';  
+            if(ch[u][id]==0)  
+            {  
+                ch[u][id]=sz;  
+                memset(ch[sz],0,sizeof(ch[sz]));  
+                val[sz++]=0;  
+            }  
+            u=ch[u][id];  
+        }  
+        val[u]=v;  
+    }  
+  
+    //getFail函数负责构造f和last数组  
+    void getFail()  
+    {  
+        queue<int> q;  
+        last[0]=f[0]=0;  
+        for(int i=0; i<sigma_size; i++)  
+        {  
+            int u=ch[0][i];  
+            if(u)  
+            {  
+                f[u]=last[u]=0;  
+                q.push(u);  
+            }  
+        }  
+  
+        while(!q.empty())// 按BFS顺序计算fail  
+        {  
+            int r=q.front(); q.pop();  
+            for(int i=0; i<sigma_size; i++)  
+            {  
+                int u=ch[r][i];  
+                if(u==0)continue;  
+                q.push(u);  
+  
+                int v=f[r];  
+                while(v && ch[v][i]==0) v=f[v];  
+                f[u]= ch[v][i];  
+                last[u] =  val[f[u]]?f[u]:last[f[u]];  
+            }  
+        }  
+    }  
+  
+    //递归打印与结点i后缀相同的前缀节点编号  
+    //进入此函数前需保证val[i]>0  
+    void print(int i)  
+    {  
+        if(i)  
+        {  
+            printf("%d\n",i);  
+            print(last[i]);  
+        }  
+    }  
+  
+    // 在s中找出 出现了哪几个模板单词  
+    void find(char *s)  
+    {  
+        int n=strlen(s),j=0;  
+        for(int i=0; i<n; i++)  
+        {  
+            int id=s[i]-'a';  
+            while(j && ch[j][id]==0) j=f[j];  
+            j=ch[j][id];  
+            if(val[j]) print(j);  
+            else if(last[j]) print(last[j]);  
+        }  
+    }  
+  
+};  
+AC_Automata ac;  
+```
+
+
 ### 扩展KMP算法
 扩展KMP的应用：
  给出模板串S和串T，长度分别为Slen和Tlen，要求在线性时间内，对于每个`S[i]（0<=i<Slen)`，求出S[i..Slen-1]与T的最长公共前缀长度，记为extend[i]（或者说，extend[i]为满足S[i..i+z-1]==T[0..z-1]的最大的z值）。
@@ -2770,6 +3264,122 @@ bool KMP(char *S,char *T)
     else return false;  
 }  
 ```
+MP与KMP模板：
+
+``` cpp
+/*************************MP模板****************************/  
+char T[1000];//待匹配串  
+char P[100];//模板串  
+  
+//失配指针,记住这里f要比P多一位  
+//因为P到m-1即可,但是f还要计算出m的失配指针  
+int f[101];  
+  
+void find(char *T, char *P, int *f) //找到所有匹配点  
+{  
+    int n = strlen(T);  
+    int m = strlen(P);  
+    int j = 0;  
+    for(int i = 0; i < n; i++)  
+    {  
+        while(j && T[i] != P[j]) j = f[j];  
+        if(T[i] == P[j]) j++;  
+        if(j == m) printf("%d\n", i - m + 1);//就算j到m了，也用f[m]继续匹配  
+    }  
+}  
+void getFail(char *P, int *f)  
+{  
+    int m = strlen(P);  
+    f[0] = f[1] = 0;  
+    for(int i = 1; i < m; i++)//虽然字符串是0到m-1，但是要求出f[m]的值  
+    {  
+        int j = f[i];  
+        while(j && P[i] != P[j]) j = f[j];  
+        f[i + 1] = P[i] == P[j] ? j + 1 : 0;  
+    }  
+}  
+/*************************MP模板****************************/  
+  
+  
+/*************************KMP模板****************************/  
+char T[1000];//待匹配串  
+char P[100];//模板串  
+int f[101];//优化后的失配指针,记住这里f要比P多一位,因为P到m-1即可,但是f还要计算出m的失配指针  
+int f2[101];//f2用来保存KM指针，是为优化f的失配指针,f保存的是优化之后的失配指针  
+void find(char *T, char *P, int *f) //找到所有匹配点  
+{  
+    int n = strlen(T);  
+    int m = strlen(P);  
+    int j = 0;  
+    for(int i = 0; i < n; i++)  
+    {  
+        while(j && T[i] != P[j]) j = f[j];  
+        if(T[i] == P[j]) j++;  
+        if(j == m) printf("%d\n", i - m + 1);  
+    }  
+}  
+void getFail(char *P, int *f)  
+{  
+    int m = strlen(P);  
+    f[0] = f[1] = 0;  
+    f2[0]=f2[1]=0;  
+    for(int i = 1; i < m; i++)  
+    {  
+        int j = f2[i];  
+        while(j && P[i] != P[j] ) j = f2[j];  
+        f2[i+1] = f[i + 1] = (P[i] == P[j]) ? j + 1 : 0;  
+  
+        //既然i+1的失配位置指向j+1，但是P[i+1]和P[j+1]的内容是相同的  
+        //所以就算指针从i+1跳到j+1去，还是不能匹配，所以f[i+1]直接=f[j+1]  
+        if(f[i+1]==j+1 && P[i+1]==P[j+1]) f[i+1]=f[j+1];  
+    }  
+}  
+/*************************KMP模板****************************/  
+```
+
+### 树状数组
+对于一个n元素的数组A[n]，可执行如下操作：
+Add(I, d)：让A[i]变成A[i]+d。
+Query(L, R)：返回A[L]+A[L+1]+…+A[R]。
+注意：树状数组只能计算A[1]开始的和，A[0]这个元素是不能用的。上面操作复杂度都是O(logn)。
+其实树状数组还可以处理区间更新，单点查询的问题。如HDU 1556 Color the ball，但是此类问题还是用线段树做比较直观。
+
+``` cpp
+const int maxn=10000+5;//最大元素个数  
+  
+int n;//元素个数  
+int c[maxn];//c[i]==A[i]+A[i-1]+...+A[i-lowbit(i)+1]  
+  
+//返回i的二进制最右边1的值  
+int lowbit(int i)  
+{  
+    return i&(-i);  
+}  
+  
+//返回A[1]+...A[i]的和  
+int sum(int i)  
+{  
+    int res=0;  
+    while(i>0)  
+    {  
+        res += c[i];  
+        i -= lowbit(i);  
+    }  
+    return res;  
+}  
+  
+//令A[i] += val  
+void add(int i,int val)  
+{  
+    while(i<=n)  
+    {  
+        c[i] += val;  
+        i += lowbit(i);  
+    }  
+}  
+```
+
+
 ### Trie树（字典树）
 
 ``` cpp
@@ -3033,6 +3643,1503 @@ int main()
 建立公共溢出区的基本思想是：假设哈希函数的值域是[1,m-1]，则设向量HashTable[0...m-1]为基本
 表，每个分量存放一个记录，另外设向量OverTable[0...v]为溢出表，所有关键字和基本表中关键字为同义
 词的记录，不管它们由哈希函数得到的哈希地址是什么，一旦发生冲突，都填入溢出表。
+
+### 最长公共子串问题(后缀自动机)
+题意：给两个串A和B，求这两个串的最长公共子串。
+ 
+分析：其实本题用后缀数组的DC3已经能很好的解决，这里我们来说说利用后缀自动机如何实现。
+对于串A和B，我们先构造出串A的后缀自动机，那么然后用B串去匹配，对于B，我们一位一位地扫描，维护一个ans值，表示从B串的开始到B[i]的这个子串与A的最长公共子串。
+ 
+假设现在到B[i-1]的最长公共子串长度为ans，然后我们来看B[i]，如果当前节点有B[i]这个孩子，那么直接就len++即可。如果没有就找一直向前找pre，直到找到有B[i]这个孩子的节点。
+
+``` cpp
+#include <iostream>  
+#include <string.h>  
+#include <algorithm>  
+#include <stdio.h>  
+  
+using namespace std;  
+const int N=250005;  
+  
+struct State  
+{  
+    State *pre,*go[26];  
+    int step;  
+    void clear()  
+    {  
+        pre=0;  
+        step=0;  
+        memset(go,0,sizeof(go));  
+    }  
+}*root,*last;  
+  
+State statePool[N*2],*cur;  
+  
+void init()  
+{  
+    cur=statePool;  
+    root=last=cur++;  
+    root->clear();  
+}  
+  
+void Insert(int w)  
+{  
+    State *p=last;  
+    State *np=cur++;  
+    np->clear();  
+    np->step=p->step+1;  
+    while(p&&!p->go[w])  
+        p->go[w]=np,p=p->pre;  
+    if(p==0)  
+        np->pre=root;  
+    else  
+    {  
+        State *q=p->go[w];  
+        if(p->step+1==q->step)  
+            np->pre=q;  
+        else  
+        {  
+            State *nq=cur++;  
+            nq->clear();  
+            memcpy(nq->go,q->go,sizeof(q->go));  
+            nq->step=p->step+1;  
+            nq->pre=q->pre;  
+            q->pre=nq;  
+            np->pre=nq;  
+            while(p&&p->go[w]==q)  
+                p->go[w]=nq, p=p->pre;  
+        }  
+    }  
+    last=np;  
+}  
+  
+char A[N],B[N];  
+  
+int main()  
+{  
+    int n,m;  
+    scanf("%s%s",A,B);  
+    n=strlen(A);  
+    m=strlen(B);  
+    init();  
+    for(int i=0; i<n; i++)  
+        Insert(A[i]-'a');  
+    int ans=0,len=0;  
+    State *p=root;  
+    for(int i=0; i<m; i++)  
+    {  
+        int x=B[i]-'a';  
+        if(p->go[x])  
+        {  
+            len++;  
+            p=p->go[x];  
+        }  
+        else  
+        {  
+            while(p&&!p->go[x]) p=p->pre;  
+            if(!p) p=root,len=0;  
+            else   len=p->step+1,p=p->go[x];  
+        }  
+        ans=max(ans,len);  
+    }  
+    printf("%d\n",ans);  
+    return 0;  
+}  
+```
+### 后缀自动机
+题目大意：给一个字符串S和一系列字符串T1~Tn，问在S中有多少个不同子串满足它不是T1~Tn中任意一个字符串的子串。
+
+``` cpp
+#include <iostream>  
+#include <string.h>  
+#include <algorithm>  
+#include <stdio.h>  
+  
+using namespace std;  
+typedef long long LL;  
+const int N=550005;  
+  
+struct State  
+{  
+    State *pre,*go[26];  
+    int step,deep;  
+    void clear()  
+    {  
+        pre=0;  
+        deep=0;  
+        step=0;  
+        memset(go,0,sizeof(go));  
+    }  
+}*root,*last;  
+  
+State statePool[N*2],*b[2*N],*cur;  
+  
+void init()  
+{  
+    cur=statePool;  
+    root=last=cur++;  
+    root->clear();  
+}  
+  
+void Insert(int w)  
+{  
+    State *p=last;  
+    State *np=cur++;  
+    np->clear();  
+    np->step=p->step+1;  
+    while(p&&!p->go[w])  
+        p->go[w]=np,p=p->pre;  
+    if(p==0)  
+        np->pre=root;  
+    else  
+    {  
+        State *q=p->go[w];  
+        if(p->step+1==q->step)  
+            np->pre=q;  
+        else  
+        {  
+            State *nq=cur++;  
+            nq->clear();  
+            memcpy(nq->go,q->go,sizeof(q->go));  
+            nq->step=p->step+1;  
+            nq->pre=q->pre;  
+            q->pre=nq;  
+            np->pre=nq;  
+            while(p&&p->go[w]==q)  
+                p->go[w]=nq, p=p->pre;  
+        }  
+    }  
+    last=np;  
+}  
+  
+char str[N];  
+int cnt[N];  
+  
+void Solve(int Q,int n)  
+{  
+    memset(cnt,0,sizeof(cnt));  
+    for(State *p=statePool; p!=cur; p++)  
+        cnt[p->step]++;  
+    for(int i=1; i<=n; i++)  
+        cnt[i]+=cnt[i-1];  
+    for(State *p=statePool; p!=cur; p++)  
+        b[--cnt[p->step]]=p;  
+    while(Q--)  
+    {  
+        scanf("%s",str);  
+        int len=0;  
+        int m=strlen(str);  
+        State *p=root;  
+        for(int i=0; i<m; i++)  
+        {  
+            int x=str[i]-'a';  
+            if(p->go[x])  
+            {  
+                len++;  
+                p=p->go[x];  
+                p->deep=max(p->deep,len);  
+            }  
+            else  
+            {  
+                while(p&&!p->go[x]) p=p->pre;  
+                if(!p) p=root,len=0;  
+                else  
+                {  
+                    len=p->step+1;  
+                    p=p->go[x];  
+                    p->deep=max(p->deep,len);  
+                }  
+            }  
+        }  
+    }  
+    LL sum=0;  
+    int num=cur-statePool;  
+    for(int i=num-1; i>0; i--)  
+    {  
+        State *q=b[i];  
+        if(q->deep>0)  
+        {  
+            q->pre->deep=max(q->pre->deep,q->deep);  
+            if(q->deep<q->step) sum+=q->step-q->deep;  
+        }  
+        else sum+=q->step-q->pre->step;  
+    }  
+    printf("%I64d\n",sum);  
+}  
+  
+int main()  
+{  
+    int t,k=1,Q;  
+    scanf("%d",&t);  
+    while(t--)  
+    {  
+        printf("Case %d: ",k++);  
+        scanf("%d",&Q);  
+        scanf("%s",str);  
+        int n=strlen(str);  
+        init();  
+        for(int i=0; i<n; i++)  
+            Insert(str[i]-'a');  
+        Solve(Q,n);  
+    }  
+    return 0;  
+}  
+
+
+```
+
+### 后缀自动机求n个串的最长公共子串
+题意：给定n个串，求它们的最长公共子串。
+ 
+思路就是：先将一个串建SAM，然后用后面的串去匹配，对于每一个串，保存最大值，对于不同的串，更新最小值。
+SAM结点多两个值，ml表示多个串的最小值，nl表示当前串匹配的最大值。
+
+``` cpp
+#include <iostream>  
+#include <string.h>  
+#include <algorithm>  
+#include <stdio.h>  
+  
+using namespace std;  
+const int N=250005;  
+  
+struct State  
+{  
+    State *pre,*go[26];  
+    int step,nl,ml;  
+    void clear()  
+    {  
+        pre=0;  
+        step=0;  
+        memset(go,0,sizeof(go));  
+    }  
+}*root,*last;  
+  
+State statePool[N*2],*b[2*N],*cur;  
+  
+void init()  
+{  
+    cur=statePool;  
+    root=last=cur++;  
+    root->clear();  
+}  
+  
+void Insert(int w)  
+{  
+    State *p=last;  
+    State *np=cur++;  
+    np->clear();  
+    np->step=np->ml=p->step+1;  
+    while(p&&!p->go[w])  
+        p->go[w]=np,p=p->pre;  
+    if(p==0)  
+        np->pre=root;  
+    else  
+    {  
+        State *q=p->go[w];  
+        if(p->step+1==q->step)  
+            np->pre=q;  
+        else  
+        {  
+            State *nq=cur++;  
+            nq->clear();  
+            memcpy(nq->go,q->go,sizeof(q->go));  
+            nq->step=nq->ml=p->step+1;  
+            nq->pre=q->pre;  
+            q->pre=nq;  
+            np->pre=nq;  
+            while(p&&p->go[w]==q)  
+                p->go[w]=nq, p=p->pre;  
+        }  
+    }  
+    last=np;  
+}  
+  
+char str[N];  
+int cnt[N];  
+  
+int main()  
+{  
+    int n,m;  
+    scanf("%s",str);  
+    n=strlen(str);  
+    init();  
+    for(int i=0; i<n; i++)  
+        Insert(str[i]-'a');  
+    for(State *p=statePool; p!=cur; p++)  
+        cnt[p->step]++;  
+    for(int i=1; i<=n; i++)  
+        cnt[i]+=cnt[i-1];  
+    for(State *p=statePool; p!=cur; p++)  
+        b[--cnt[p->step]]=p;  
+    while(~scanf("%s",str))  
+    {  
+        int len=0;  
+        m=strlen(str);  
+        State *p=root;  
+        for(int i=0; i<m; i++)  
+        {  
+            int x=str[i]-'a';  
+            if(p->go[x])  
+            {  
+                len++;  
+                p=p->go[x];  
+            }  
+            else  
+            {  
+                while(p&&!p->go[x]) p=p->pre;  
+                if(!p) p=root,len=0;  
+                else   len=p->step+1,p=p->go[x];  
+            }  
+            if(len>p->nl) p->nl=len;  
+        }  
+        int num=cur-statePool;  
+        for(int i=num-1;i>=0;i--)  
+        {  
+            p=b[i];  
+            if(p->ml>p->nl) p->ml=p->nl;  
+            if(p->pre&&p->pre->nl<p->nl) p->pre->nl=p->nl;  
+            p->nl=0;  
+        }  
+    }  
+    int ans=0;  
+    for(State *p=statePool;p!=cur;p++)  
+        if(p->ml>ans) ans=p->ml;  
+    printf("%d\n",ans);  
+    return 0;  
+}  
+
+
+```
+
+### 后缀自动机--第k大的子串
+题意：给一个字符串，然后给Q个询问，每个询问输入一个数K，输出子串中字典序为K的字符串。
+
+``` cpp
+#include <iostream>  
+#include <string.h>  
+#include <algorithm>  
+#include <stdio.h>  
+  
+using namespace std;  
+const int N=250005;  
+  
+struct State  
+{  
+    State *pre,*go[26];  
+    int step,v;  
+    void clear()  
+    {  
+        v=0;  
+        pre=0;  
+        step=0;  
+        memset(go,0,sizeof(go));  
+    }  
+}*root,*last;  
+  
+State statePool[N*2],*b[2*N],*cur;  
+  
+void init()  
+{  
+    cur=statePool;  
+    root=last=cur++;  
+    root->clear();  
+}  
+  
+void Insert(int w)  
+{  
+    State *p=last;  
+    State *np=cur++;  
+    np->clear();  
+    np->step=p->step+1;  
+    while(p&&!p->go[w])  
+        p->go[w]=np,p=p->pre;  
+    if(p==0)  
+        np->pre=root;  
+    else  
+    {  
+        State *q=p->go[w];  
+        if(p->step+1==q->step)  
+            np->pre=q;  
+        else  
+        {  
+            State *nq=cur++;  
+            nq->clear();  
+            memcpy(nq->go,q->go,sizeof(q->go));  
+            nq->step=p->step+1;  
+            nq->pre=q->pre;  
+            q->pre=nq;  
+            np->pre=nq;  
+            while(p&&p->go[w]==q)  
+                p->go[w]=nq, p=p->pre;  
+        }  
+    }  
+    last=np;  
+}  
+  
+char str[N];  
+int son[2*N][26];  
+char ch[2*N][26];  
+int cnt[2*N],c[2*N];  
+  
+void Solve(int k)  
+{  
+    int ct=0;  
+    int now=0;  
+    while(k)  
+    {  
+        for(int i=0; i<c[now]; i++)  
+        {  
+            State *tmp=statePool+son[now][i];  
+            if(k>tmp->v)  
+                k-=tmp->v;  
+            else  
+            {  
+                str[ct++]=ch[now][i];  
+                now=son[now][i];  
+                k--;  
+                break;  
+            }  
+        }  
+    }  
+    str[ct]=0;  
+    puts(str);  
+}  
+  
+int main()  
+{  
+    int n;  
+    scanf("%s",str);  
+    n=strlen(str);  
+    init();  
+    for(int i=0; i<n; i++)  
+        Insert(str[i]-'a');  
+    memset(cnt,0,sizeof(cnt));  
+    memset(c,0,sizeof(c));  
+    for(State *p=statePool; p!=cur; p++)  
+        cnt[p->step]++;  
+    for(int i=1; i<cur-statePool; i++)  
+        cnt[i]+=cnt[i-1];  
+    for(State *p=statePool; p!=cur; p++)  
+        b[--cnt[p->step]]=p;  
+    for(State *p=statePool; p!=cur; p++)  
+        p->v=1;  
+  
+    int num=cur-statePool;  
+    for(int i=num-1; i>=0; i--)  
+    {  
+        State *p=b[i];  
+        for(int j=0; j<26; j++)  
+        {  
+            if(p->go[j])  
+            {  
+                int x=p-statePool;  
+                int y=p->go[j]-statePool;  
+                son[x][c[x]]=y;  
+                ch[x][c[x]++]=j+'a';  
+                p->v+=p->go[j]->v;  
+            }  
+        }  
+    }  
+    int Q,k;  
+    scanf("%d",&Q);  
+    while(Q--)  
+    {  
+        scanf("%d",&k);  
+        Solve(k);  
+    }  
+    return 0;  
+}  
+
+```
+
+### Treap树
+Treap是一种动态平衡的BST(Binary Search Tree)，它每个节点拥有键值和优先级两种属性。对于键值而言，它是一颗排序二叉树。对于优先级而言，这棵树是堆(优先级最高的是根节点)。可以证明Treap中插入，删除和查找的期望时间复杂度均为O(logn)。关于Treap的更多介绍，可见刘汝佳《训练指南》P230。
+一般我们用Treap就是用来替代平衡二叉排序树用的。Treap实现的代码很少，实现简单。我们可以在Treap的基础上实现名次树。
+
+名次树支持两个操作：
+1)找出第k小的元素(元素从小到大排序的第k个)。
+2)找到值x的名次。
+
+基本代码：
+``` cpp
+#include<cstdio>  
+#include<cstring>  
+#include<cstdlib>  
+using namespace std;  
+  
+struct Node  
+{  
+    Node *ch[2];  
+    int r;//优先级,构成大顶堆  
+    int v;//键值,构成排序二叉树  
+  
+    int cmp(int x)//比较键值大小  
+    {  
+        if(x==v) return -1;  
+        return x<v?0:1;  
+    }  
+};  
+  
+//d=0表示左旋,d=1表示右旋  
+void rotate(Node* &o,int d)  
+{  
+    Node *k=o->ch[d^1];  
+    o->ch[d^1]=k->ch[d];  
+    k->ch[d]=o;  
+    o=k;  
+}  
+  
+//插入值为x的节点  
+void insert(Node* &o,int x)  
+{  
+    if(o==NULL)  
+    {  
+        o=new Node();  
+        o->ch[0]=o->ch[1]=NULL;  
+        o->v=x;  
+        o->r=rand();//在cstdlib头声明  
+    }  
+    else  
+    {  
+        //如这里改成int d=o->cmp(x);  
+        //就不可以插入相同的值，因为d可能为-1  
+        int d=x<(o->v)?0:1;  
+        insert(o->ch[d],x);  
+        if(o->ch[d]->r > o->r)  
+            rotate(o,d^1);  
+    }  
+}  
+  
+//删除v值为x的节点  
+void remove(Node *&o,int v)  
+{  
+    if(o==NULL) return ;//空时返回  
+  
+    int d=o->cmp(v);  
+    if(d==-1)//o就是需要删除的节点  
+    {  
+        Node *u=o;  
+        if(o->ch[0] && o->ch[1])  
+        {  
+            int d2 = o->ch[0]->r < o->ch[1]->r ?0:1;  
+            rotate(o,d2);  
+            remove(o->ch[d2],v);  
+        }  
+        else  
+        {  
+            if(o->ch[0]==NULL)o=o->ch[1];  
+            else o=o->ch[0];  
+            delete u;//记得删除节点  
+        }  
+    }  
+    else remove(o->ch[d],v);  
+}  
+int find(Node *o,int x)  
+{  
+    while(o)  
+    {  
+        int d=o->cmp(x);  
+        if(d==-1)return 1; //存在  
+        o=o->ch[d];  
+    }  
+    return 0;              //不存在  
+}  
+```
+名次树：
+
+``` cpp
+#include<cstdio>  
+#include<cstring>  
+#include<cstdlib>  
+#include<cassert>  
+using namespace std;  
+struct Node  
+{  
+    Node *ch[2];  
+    int r,v,s;//s表示节点数  
+  
+    Node(int v):v(v)  
+    {  
+        ch[0]=ch[1]=NULL;  
+        r=rand();//在cstdlib头声明  
+        s=1;  
+    }  
+  
+    int cmp(int x)  
+    {  
+        if(x==v)return -1;  
+        return x<v?0:1;  
+    }  
+    void maintain()  
+    {  
+        s=1;  
+        if(ch[0]!=NULL) s+=ch[0]->s;  
+        if(ch[1]!=NULL) s+=ch[1]->s;  
+    }  
+};  
+void rotate(Node* &o,int d)  
+{  
+    Node *k=o->ch[d^1];  
+    o->ch[d^1]=k->ch[d];  
+    k->ch[d]=o;  
+    o->maintain();  
+    k->maintain();  
+    o=k;  
+}  
+void insert(Node* &o,int x)//o子树中事先不存在x  
+{  
+    if(o==NULL) o=new Node(x);  
+    else  
+    {  
+        //如这里改成int d=o->cmp(x);  
+        //就不可以插入相同的值，因为d可能为-1  
+        int d=x<(o->v)?0:1;  
+        insert(o->ch[d],x);  
+        if(o->ch[d]->r > o->r)  
+            rotate(o,d^1);  
+    }  
+    o->maintain();  
+}  
+  
+void remove(Node* &o,int x)  
+{  
+    if(o==NULL) return ;//空时返回  
+  
+    int d=o->cmp(x);  
+    if(d==-1)  
+    {  
+        Node *u=o;  
+        if(o->ch[0] && o->ch[1])  
+        {  
+            int d2=(o->ch[0]->r < o->ch[1]->r)?0:1;  
+            rotate(o,d2);  
+            remove(o->ch[d2],x);  
+        }  
+        else  
+        {  
+            if(o->ch[0]==NULL) o=o->ch[1];  
+            else o=o->ch[0];  
+            delete u;//这个要放里面  
+        }  
+    }  
+    else remove(o->ch[d],x);  
+    if(o) o->maintain();//之前o存在,但是删除节点后o可能就是空NULL了,所以需要先判断o是否为空  
+}  
+  
+//返回关键字从小到大排序时的第k个值  
+int kth(Node* o,int k)  
+{  
+    assert(o && k>=1 && k<=o->s);//保证输入合法  
+    int s=(o->ch[0]==NULL)?0:o->ch[0]->s;  
+    if(k==s+1) return o->v;  
+    else if(k<=s) return kth(o->ch[0],k);  
+    else return kth(o->ch[1],k-s-1);  
+}  
+  
+//返回值x在树中的排名,就算x不在o树中也能返回排名  
+//返回值范围在[1,o->s+1]范围内  
+int rank(Node* o,int x)  
+{  
+    if(o==NULL) return 1;//未找到x;  
+  
+    int num= o->ch[0]==NULL ? 0:o->ch[0]->s;  
+    if(x==o->v) return num+1;  
+    else if(x < o->v) return rank(o->ch[0],x);  
+    else return rank(o->ch[1],x)+num+1;  
+}  
+  
+  
+int main()  
+{  
+    int n=0;  
+    while(scanf("%d",&n)==1 && n)  
+    {  
+        Node *root=NULL;  
+        for(int i=0;i<n;i++)  
+        {  
+            int x;  
+            scanf("%d",&x);  
+            if(root==NULL) root=new Node(x);  
+            else insert(root,x);  
+        }  
+  
+        int v;  
+        while(scanf("%d",&v)==1)  
+        {  
+            printf("%d\n",rank(root,v));  
+        }  
+    }  
+    return 0;  
+}  
+```
+
+### 基于哈希值的LCP算法
+题意:给你一个字符串s和m,求出字符串中至少出现m次的最长子串.如果有多解,输出最长字符串的长度以及它出现的最大位置.
+
+``` cpp
+#include<iostream>  
+#include<cstdio>  
+#include<cstring>  
+#include<algorithm>  
+using namespace std;  
+const int maxn = 40000+1000;  
+typedef unsigned long long LL;  
+LL h[maxn],x;//后缀哈希值  
+char str[maxn];  
+int n,m,max_pos;  
+LL mi[maxn];//mi[i]的值是x的i次方的值  
+struct node  
+{  
+    LL hash;//起点为pos且长len的串的哈希值  
+    int pos;//起点位置  
+    bool operator <(const node &b)const  
+    {  
+        return hash<b.hash ||(hash==b.hash && pos<b.pos);  
+    }  
+}nodes[maxn];  
+bool check(int len)  
+{  
+    for(int i=0;i+len-1<=n-1;i++)//共有n-len+1个长为len的连续子串  
+    {  
+        nodes[i].hash=h[i]-h[i+len]*mi[len];  
+        nodes[i].pos=i;//起点位置  
+    }  
+    sort(nodes,nodes+n-len+1);  
+  
+    max_pos=-1;  
+    int sum=0;  
+    for(int i=0;i+len-1<=n-1;i++)  
+    {  
+        if(i==0 || nodes[i].hash==nodes[i-1].hash)  
+        {  
+            sum++;  
+            if(sum>=m) max_pos=max(max_pos,nodes[i].pos);  
+        }  
+        else sum=1;  
+    }  
+    return max_pos>=0;  
+}  
+int main()  
+{  
+    x=123;  
+    while(scanf("%d",&m)==1&&m)  
+    {  
+        scanf("%s",str);  
+        n=strlen(str);  
+        h[n]=0;  
+        for(int i=n-1;i>=0;i--)  
+            h[i]=h[i+1]*x+str[i]-'a';  
+        mi[0]=1;  
+        for(int i=1;i<=n;i++)  
+            mi[i]=mi[i-1]*x;  
+        if(!check(1))  
+        {  
+            printf("none\n");  
+            continue;  
+        }  
+        int min=1,max=n;  
+        while(min<max)  
+        {  
+            int mid=min+(max-min+1)/2;  
+            if(check(mid)) min=mid;  
+            else max=mid-1;  
+        }  
+        check(min);  
+        printf("%d %d\n",min,max_pos);  
+    }  
+    return 0;  
+}  
+```
+
+### 连续自然数的lcm
+题意：给定一个正整数n，lcm（1-n）求的值，输入数据有10000组，每组一个数n，1<=n<=10^8。
+
+``` cpp
+#include <iostream>  
+#include <string.h>  
+#include <algorithm>  
+#include <stdio.h>  
+#include <math.h>  
+  
+using namespace std;  
+typedef unsigned int uint;  
+const int N = 100000005;  
+const int M = 6000005;  
+const int SHIFT = 5;  
+const int RADIX = (1 << SHIFT) - 1;  
+  
+int flag[(N>>SHIFT)+1];  
+uint sum[M];  
+int p[M];  
+int k;  
+  
+inline void SetBit(int x)  
+{  
+    flag[x>>SHIFT] |= (1<<(x&RADIX));  
+}  
+  
+inline bool GetBit(int x)  
+{  
+    return flag[x>>SHIFT] & (1<<(x&RADIX));  
+}  
+  
+void isprime()  
+{  
+    k = 0;  
+    for(int i=2; i<N; i++)  
+    {  
+        if(!GetBit(i))  
+        {  
+            p[k++] = i;  
+            for(int j=i+i; j<N; j+=i)  
+                SetBit(j);  
+        }  
+    }  
+}  
+  
+void Init()  
+{  
+    sum[0] = p[0];  
+    for(int i=1; i<k; i++)  
+        sum[i] = sum[i-1] * p[i];  
+}  
+  
+int main()  
+{  
+    isprime();  
+    Init();  
+    int T,n,tt = 1;  
+    scanf("%d",&T);  
+    while(T--)  
+    {  
+        scanf("%d",&n);  
+        printf("Case %d: ",tt++);  
+        uint ans = 1;  
+        int cnt = 1;  
+        while(1)  
+        {  
+            int m = (int)pow(n+0.9,1.0/cnt);  
+            if(m < 2) break;  
+            int i = lower_bound(p,p+k,m) - p;  
+            if(p[i] != m) i--;  
+            ans *= sum[i];  
+            cnt++;  
+        }  
+        printf("%u\n",ans);  
+    }  
+    return 0;  
+}  
+```
+
+### 积性函数
+
+``` cpp
+#include <iostream>  
+#include <string.h>  
+#include <stdio.h>  
+  
+using namespace std;  
+typedef long long LL;  
+const int N = 10000005;  
+const int M = 1000005;  
+  
+bool prime[N];  
+int p[N];  
+int k;  
+  
+void isprime()  
+{  
+    k = 0;  
+    memset(prime,true,sizeof(prime));  
+    for(int i=2;i<N;i++)  
+    {  
+        if(prime[i])  
+        {  
+            p[k++] = i;  
+            for(int j=i+i;j<N;j+=i)  
+                prime[j] = false;  
+        }  
+    }  
+}  
+  
+LL quick_mod(LL a,LL b,LL m)  
+{  
+    LL ans = 1;  
+    a %= m;  
+    while(b)  
+    {  
+        if(b&1)  
+        {  
+            ans = ans * a % m;  
+            b--;  
+        }  
+        b >>= 1;  
+        a = a * a % m;  
+    }  
+    return ans;  
+}  
+  
+int main()  
+{  
+    int n,m,t;  
+    isprime();  
+    scanf("%d",&t);  
+    while(t--)  
+    {  
+        scanf("%d%d",&n,&m);  
+        LL cnt = 0;  
+        for(int i=0;i < k;i++)  
+        {  
+            if(p[i] > n) break;  
+            cnt += n / p[i];  
+        }  
+        LL ans = quick_mod(2,cnt,m);  
+        printf("%I64d\n",ans);  
+    }  
+    return 0;  
+}  
+```
+
+### 莫比乌斯反演
+题意：给出n, m, p，求有多少对a, b满足gcd(a, b)的素因子个数<=p，(其中1<=a<=n, 1<=b<=m)
+分析：设A(d)：gcd(a, b)=d的有多少种
+     设B(j): gcd(a, b)是j的倍数的有多少种，易知B(j) = (n/j)*(m/j)
+     则由容斥原理得：（注：不同行的μ是不相同的，μ为莫比乌斯函数）
+     A(1) = μ(1)*B(1) + μ(2)*B(2) + μ(3)*B(3) + ... + μ(p1*p2...)*B(p1*p2...)
+     A(2) = μ(1)*B(1*2) + μ(2)*B(2*2) + μ(3)*B(3*2) + ... + μ(p1*p2..)*B(p1*p2..*2)
+     ...
+     A(d) = μ(1)*B(1*d) + μ(2)*B(2*d) + μ(3)*B(3*d) + ... + μ(p1*p2..)*B(p1*p2..*d)
+ 
+   ans = A(1)+A(2)+...+A(d) = F(1)*B(1) + F(2)*B(2) + ... + F(p1*p2..)*B(p1*p2..)
+
+   于是可以枚举公约数i{表示A(i)}，利用筛法找出i的倍数j，i对B(j)的贡献系数为：F(j)+=μ(j/i)
+     总之，求出B(j)的总贡献系数F(j)即可得答案：F(1)*B(1)+F(2)*B(2)+...+F(n)*B(n)
+     上面没有限制gcd的素因子个数，要限制其实不难，给系数加多一维即可：
+     F(d)(p)表示：素因子个数<=p时，对B(d)的贡献系数
+   
+     分块加速思想
+     你可以再纸上模拟一下：设d在[i, n/(n/i)]的区间上，则该区间内所有的n/d都是一样的。
+ 
+
+``` cpp
+#include <iostream>  
+#include <cstdio>  
+#include <cmath>  
+#include <algorithm>  
+using namespace std;  
+#define LL long long  
+#define M 500005  
+#define N 19  
+  
+//返回n中有多少个x因子  
+int cal(int n, int x)  
+{  
+    int res = 0;  
+    do  
+    {  
+        ++res;  
+        n /= x;  
+    }  
+    while (n % x == 0);  
+    return res;  
+}  
+  
+//备注：分块加速求解需要求前缀和  
+//F[i][j]: 表示素因子个数<=j条件下的莫比乌斯前缀和：μ(1)+μ(2)+...+μ(i)  
+int F[M][N];  
+int num[M];     //num[i]: i中含有多少个素因子  
+int h[M];       //h[i]: -1表示存在平方因子，否则表示有多少种素因子  
+  
+//莫比乌斯函数的定义  
+int mob(int n)  
+{  
+    if (h[n] == -1) return 0;   //存在平方因子时，μ(n)=0  
+    if (h[n] & 1) return -1;    //奇数个不同素数之积，μ(n)=-1  
+    return 1;                   //偶数个不同素数之积，μ(n)=1  
+}  
+  
+int main()  
+{  
+    int t, n, m, p, i, j;  
+    //筛法算出num[]以及h[]  
+    for (i = 2; i < M; i++)  
+    {  
+        if (num[i]) continue;  
+        for (j = i; j < M; j+=i)  
+        {  
+            int tp = cal(j, i);  
+            num[j] += tp;  
+            if (tp > 1)      //j中含有多个i，必然存在平方因子  
+            {  
+                h[j] = -1;  
+            }  
+            else if (h[j] >= 0)  
+            {  
+                ++h[j];  
+            }  
+        }  
+    }  
+    //枚举i作为公因子，对B(j)的贡献值为：mob(j/i)  
+    for (i = 1; i < M; i++)  
+    {  
+        for (j = i; j < M; j+=i)  
+        {  
+            F[j][num[i]] += mob(j/i);  
+        }  
+    }  
+    //为了表示素因子数<=j的意义，求j的前缀和  
+    for (i = 1; i < M; i++)  
+    {  
+        for (j = 1; j < N; j++)  
+        {  
+            F[i][j] += F[i][j-1];  
+        }  
+    }  
+    //为了分组加速求解，求i的前缀和  
+    for (i = 1; i < M; i++)  
+    {  
+        for (j = 0; j < N; j++)  
+        {  
+            F[i][j] += F[i-1][j];  
+        }  
+    }  
+    scanf("%d", &t);  
+    while (t--)  
+    {  
+        scanf("%d%d%d", &n, &m, &p);  
+        LL ans = 0;  
+        if (p >= N)  
+        {  
+            ans = (LL)n*m;  
+        }  
+        else  
+        {  
+            if (n > m)  
+            {  
+                n ^= m;  
+                m ^= n;  
+                n ^= m;  
+            }  
+            for (i = 1; i <= n; i = j + 1)  
+            {  
+                j = min(n/(n/i), m/(m/i));  
+                ans += ((LL)F[j][p]-F[i-1][p])*(n/i)*(m/i);  
+            }  
+        }  
+        printf("%I64d\n", ans);  
+    }  
+    return 0;  
+}  
+```
+
+### 求1~r中有多少个数与n互素。
+对于这个问题由容斥原理，我们有3种写法，其实效率差不多。分别是：dfs，队列数组，位运算。
+
+先说说位运算吧：
+用二进制1,0来表示第几个素因子是否被用到,如m=3，三个因子是2,3,5，则i=3时二进制是011，表示第2、3个
+因子被用到
+
+``` cpp
+LL Solve(LL n,LL r)  
+{  
+    vector<LL> p;  
+    for(LL i=2; i*i<=n; i++)  
+    {  
+        if(n%i==0)  
+        {  
+            p.push_back(i);  
+            while(n%i==0) n/=i;  
+        }  
+    }  
+    if(n>1)  
+        p.push_back(n);  
+    LL ans=0;  
+    for(LL msk=1; msk<(1<<p.size()); msk++)  
+    {  
+        LL multi=1,bits=0;  
+        for(LL i=0; i<p.size(); i++)  
+        {  
+            if(msk&(1<<i))  //判断第几个因子目前被用到  
+            {  
+                ++bits;  
+                multi*=p[i];  
+            }  
+        }  
+        LL cur=r/multi;  
+        if(bits&1) ans+=cur;  
+        else       ans-=cur;  
+    }  
+    return r-ans;  
+}  
+```
+DFS实现：
+
+``` cpp
+void Solve(LL n)  
+{  
+    p.clear();  
+    for(LL i=2; i*i<=n; i++)  
+    {  
+        if(n%i==0)  
+        {  
+            p.push_back(i);  
+            while(n%i==0) n/=i;  
+        }  
+    }  
+    if(n>1)  
+        p.push_back(n);  
+}  
+  
+void dfs(LL k,LL t,LL s,LL n)  
+{  
+    if(k==p.size())  
+    {  
+        if(t&1) ans-=n/s;  
+        else    ans+=n/s;  
+        return;  
+    }  
+    dfs(k+1,t,s,n);  
+    dfs(k+1,t+1,s*p[k],n);  
+}  
+  
+//主函数内是：  
+dfs(0,0,1,r);  
+```
+### PollardRho大整数分解
+
+``` cpp
+#include <iostream>  
+#include <stdlib.h>  
+#include <string.h>  
+#include <algorithm>  
+#include <stdio.h>  
+  
+const int Times = 10;  
+const int N = 5500;  
+  
+using namespace std;  
+typedef long long LL;  
+  
+LL ct, cnt;  
+LL fac[N], num[N];  
+  
+LL gcd(LL a, LL b)  
+{  
+    return b? gcd(b, a % b) : a;  
+}  
+  
+LL multi(LL a, LL b, LL m)  
+{  
+    LL ans = 0;  
+    a %= m;  
+    while(b)  
+    {  
+        if(b & 1)  
+        {  
+            ans = (ans + a) % m;  
+            b--;  
+        }  
+        b >>= 1;  
+        a = (a + a) % m;  
+    }  
+    return ans;  
+}  
+  
+LL quick_mod(LL a, LL b, LL m)  
+{  
+    LL ans = 1;  
+    a %= m;  
+    while(b)  
+    {  
+        if(b & 1)  
+        {  
+            ans = multi(ans, a, m);  
+            b--;  
+        }  
+        b >>= 1;  
+        a = multi(a, a, m);  
+    }  
+    return ans;  
+}  
+  
+bool Miller_Rabin(LL n)  
+{  
+    if(n == 2) return true;  
+    if(n < 2 || !(n & 1)) return false;  
+    LL m = n - 1;  
+    int k = 0;  
+    while((m & 1) == 0)  
+    {  
+        k++;  
+        m >>= 1;  
+    }  
+    for(int i=0; i<Times; i++)  
+    {  
+        LL a = rand() % (n - 1) + 1;  
+        LL x = quick_mod(a, m, n);  
+        LL y = 0;  
+        for(int j=0; j<k; j++)  
+        {  
+            y = multi(x, x, n);  
+            if(y == 1 && x != 1 && x != n - 1) return false;  
+            x = y;  
+        }  
+        if(y != 1) return false;  
+    }  
+    return true;  
+}  
+  
+LL pollard_rho(LL n, LL c)  
+{  
+    LL i = 1, k = 2;  
+    LL x = rand() % (n - 1) + 1;  
+    LL y = x;  
+    while(true)  
+    {  
+        i++;  
+        x = (multi(x, x, n) + c) % n;  
+        LL d = gcd((y - x + n) % n, n);  
+        if(1 < d && d < n) return d;  
+        if(y == x) return n;  
+        if(i == k)  
+        {  
+            y = x;  
+            k <<= 1;  
+        }  
+    }  
+}  
+  
+void find(LL n, int c)  
+{  
+    if(n == 1) return;  
+    if(Miller_Rabin(n))  
+    {  
+        fac[ct++] = n;  
+        return ;  
+    }  
+    LL p = n;  
+    LL k = c;  
+    while(p >= n) p = pollard_rho(p, c--);  
+    find(p, k);  
+    find(n / p, k);  
+}  
+  
+int main()  
+{  
+    LL n;  
+    while(cin>>n)  
+    {  
+        ct = 0;  
+        find(n, 120);  
+        sort(fac, fac + ct);  
+        num[0] = 1;  
+        int k = 1;  
+        for(int i=1; i<ct; i++)  
+        {  
+            if(fac[i] == fac[i-1])  
+                ++num[k-1];  
+            else  
+            {  
+                num[k] = 1;  
+                fac[k++] = fac[i];  
+            }  
+        }  
+        cnt = k;  
+        for(int i=0; i<cnt; i++)  
+            cout<<fac[i]<<"^"<<num[i]<<" ";  
+        cout<<endl;  
+    }  
+    return 0;  
+}  
+```
+
+### 组合数取模
+数据规模较大时10^9：
+``` cpp
+#include <iostream>  
+#include <string.h>  
+#include <stdio.h>  
+  
+using namespace std;  
+typedef long long LL;  
+  
+LL n,m,p;  
+  
+LL quick_mod(LL a, LL b)  
+{  
+    LL ans = 1;  
+    a %= p;  
+    while(b)  
+    {  
+        if(b & 1)  
+        {  
+            ans = ans * a % p;  
+            b--;  
+        }  
+        b >>= 1;  
+        a = a * a % p;  
+    }  
+    return ans;  
+}  
+  
+LL C(LL n, LL m)  
+{  
+    if(m > n) return 0;  
+    LL ans = 1;  
+    for(int i=1; i<=m; i++)  
+    {  
+        LL a = (n + i - m) % p;  
+        LL b = i % p;  
+        ans = ans * (a * quick_mod(b, p-2) % p) % p;  
+    }  
+    return ans;  
+}  
+  
+LL Lucas(LL n, LL m)  
+{  
+    if(m == 0) return 1;  
+    return C(n % p, m % p) * Lucas(n / p, m / p) % p;  
+}  
+  
+int main()  
+{  
+    int T;  
+    scanf("%d", &T);  
+    while(T--)  
+    {  
+        scanf("%I64d%I64d%I64d", &n, &m, &p);  
+        printf("%I64d\n", Lucas(n,m));  
+    }  
+    return 0;  
+}  
+```
+数据规模较小时10^5：
+
+``` stylus
+#include <iostream>  
+#include <string.h>  
+#include <stdio.h>  
+  
+using namespace std;  
+typedef long long LL;  
+const int N = 200005;  
+  
+bool prime[N];  
+int p[N];  
+int cnt;  
+  
+void isprime()  
+{  
+    cnt = 0;  
+    memset(prime,true,sizeof(prime));  
+    for(int i=2; i<N; i++)  
+    {  
+        if(prime[i])  
+        {  
+            p[cnt++] = i;  
+            for(int j=i+i; j<N; j+=i)  
+                prime[j] = false;  
+        }  
+    }  
+}  
+  
+LL quick_mod(LL a,LL b,LL m)  
+{  
+    LL ans = 1;  
+    a %= m;  
+    while(b)  
+    {  
+        if(b & 1)  
+        {  
+            ans = ans * a % m;  
+            b--;  
+        }  
+        b >>= 1;  
+        a = a * a % m;  
+    }  
+    return ans;  
+}  
+  
+LL Work(LL n,LL p)  
+{  
+    LL ans = 0;  
+    while(n)  
+    {  
+        ans += n / p;  
+        n /= p;  
+    }  
+    return ans;  
+}  
+  
+LL Solve(LL n,LL m,LL P)  
+{  
+    LL ans = 1;  
+    for(int i=0; i<cnt && p[i]<=n; i++)  
+    {  
+        LL x = Work(n, p[i]);  
+        LL y = Work(n - m, p[i]);  
+        LL z = Work(m, p[i]);  
+        x -= (y + z);  
+        ans *= quick_mod(p[i],x,P);  
+        ans %= P;  
+    }  
+    return ans;  
+}  
+  
+int main()  
+{  
+    int T;  
+    isprime();  
+    cin>>T;  
+    while(T--)  
+    {  
+        LL n,m,P;  
+        cin>>n>>m>>P;  
+        n += m - 2;  
+        m--;  
+        cout<<Solve(n,m,P)<<endl;  
+    }  
+    return 0;  
+}  
+
+
+```
+### Bell数
+Bell数的定义：第n个Bell数表示集合{1,2,3,...,n}的划分方案数；
+Bell三角形的构造方法：
+第一行第一个元素是1，即a[1][1] = 1
+对于n>1，第n行第一项等于第n-1行最后一项，即a[n][1] = a[n-1][n-1];
+对于m,n>1，第n行第m项等于它左边和左上方的两个数之和，即a[n][m] = a[n][m-1] + a[n-1][m-1];
+
+``` cpp
+void Bell(int T[],int MOD)  
+{  
+    B[0] = 1;  
+    B[1] = 1;  
+    T[0] = 1;  
+    for(int i=2;i<N;i++)  
+    {  
+        T[i-1] = B[i-1];  
+        for(int j=i-2;j>=0;j--)  
+            T[j] = (T[j]+T[j+1])%MOD;  
+        B[i] = T[0];  
+    }  
+}  
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
 
 
 
