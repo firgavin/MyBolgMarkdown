@@ -1,0 +1,233 @@
+---
+title: DataMining_Kmeans
+
+---
+# Kmeans算法实现
+## Kmeans简介
+Kmeans属于聚类分析中的划分方法，形式得，给定n个数据对象的数据集D，以及要生成的簇数k，划分算法吧数据对象组织成k个分区，这些簇的形成旨在优化一个客观划分准则。
+对于划分方法来说有如下的**特点**：
+
+> 1、发现球形互斥的簇
+> 2、基于距离
+> 3、可以用均值或者中心点等代表簇
+> 4、对中小规模数据集有效
+
+Kmeans是一种基于形心的技术。
+
+**下面是Kmeans的基本算法：**
+
+``` python
+选择K个点作为初始质心  
+repeat  
+    将每个点指派到最近的质心，形成K个簇  
+    重新计算每个簇的质心  
+until 簇不发生变化或达到最大迭代次数 
+```
+**时间复杂度：O(tKmn)，其中，t为迭代次数，K为簇的数目，m为记录数，n为维数**
+**复杂度：O((m+K)n)，其中，K为簇的数目，m为记录数，n为维数**
+
+## Kmeans实现问题
+### K如何确定
+kmenas算法首先选择K个初始质心，其中K是用户指定的参数，即所期望的簇的个数。这样做的前提是我们已经知道数据集中包含多少个簇，但很多情况下，我们并不知道数据的分布情况，实际上聚类就是我们发现数据分布的一种手段，这就陷入了鸡和蛋的矛盾。如何有效的确定K值，这里大致提供几种方法。
+
+> **1.与层次聚类结合**
+>  经常会产生较好的聚类结果的一个有趣策略是，首先采用层次凝聚算法决定结果粗的数目，并找到一个初始聚类，然后用迭代重定位来改进该聚类。
+> 
+> **2.稳定性方法**
+> 稳定性方法对一个数据集进行2次重采样产生2个数据子集，再用相同的聚类算法对2个数据子集进行聚类，产生2个具有k个聚类的聚类结果，计算2个聚类结果的相似度的分布情况。2个聚类结果具有高的相似度说明k个聚类反映了稳定的聚类结构，其相似度可以用来估计聚类个数。采用次方法试探多个k，找到合适的k值。
+> 
+> **3.系统演化方法**
+> 系统演化方法将一个数据集视为伪热力学系统，当数据集被划分为K个聚类时称系统处于状态K。系统由初始状态K=1出发，经过分裂过程和合并过程，系统将演化到它的稳定平衡状态Ki，其所对应的聚类结构决定了最优类数Ki。系统演化方法能提供关于所有聚类之间的相对边界距离或可分程度，它适用于明显分离的聚类结构和轻微重叠的聚类结构。
+> 
+> **4.使用canopy算法进行初始划分**
+> 基于Canopy Method的聚类算法将聚类过程分为两个阶段
+> Stage1、聚类最耗费计算的地方是计算对象相似性的时候，Canopy Method在第一阶段选择简单、计算代价较低的方法计算对象相似性，将相似的对象放在一个子集中，这个子集被叫做Canopy> ，通过一系列计算得到若干Canopy，Canopy之间可以是重叠的，但不会存在某个对象不属于任何Canopy的情况，可以把这一阶段看做数据预处理；
+> Stage2、在各个Canopy 内使用传统的聚类方法(如K-means)，不属于同一Canopy 的对象之间不进行相似性计算。 从这个方法起码可以看出两点好处：首先，Canopy 不要太大且Canopy> 之间重叠的不要太多的话会大大减少后续需要计算相似性的对象的个数；其次，类似于K-means这样的聚类方法是需要人为指出K的值的，通过Stage1得到的Canopy个数完全可以作为这个K值，一定程度上减少了选择K的盲目性。
+
+### 初始质心的选取
+择适当的初始质心是基本kmeans算法的关键步骤。
+常见的方法是随机的选取初始质心，但是这样簇的质量常常很差。处理选取初始质心问题的一种常用技术是：多次运行，每次使用一组不同的随机初始质心，然后选取具有最小SSE（误差的平方和）的簇集。这种策略简单，但是效果可能不好，这取决于数据集和寻找的簇的个数。
+          第二种有效的方法是，取一个样本，并使用层次聚类技术对它聚类。从层次聚类中提取K个簇，并用这些簇的质心作为初始质心。该方法通常很有效，但仅对下列情况有效：（1）样本相对较小，例如数百到数千（层次聚类开销较大）；（2）K相对于样本大小较小
+           第三种选择初始质心的方法，随机地选择第一个点，或取所有点的质心作为第一个点。然后，对于每个后继初始质心，选择离已经选取过的初始质心最远的点。使用这种方法，确保了选择的初始质心不仅是随机的，而且是散开的。但是，这种方法可能选中离群点。此外，求离当前初始质心集最远的点开销也非常大。为了克服这个问题，通常该方法用于点样本。由于离群点很少（多了就不是离群点了），它们多半不会在随机样本中出现。计算量也大幅减少。
+          第四种方法就是上面提到的canopy算法。
+          
+### 距离的度量
+常用的距离度量方法包括：欧几里得距离和余弦相似度。两者都是评定个体间差异的大小的。欧几里得距离度量会受指标不同单位刻度的影响，所以一般需要先进行标准化，同时距离越大，个体间差异越大；空间向量余弦夹角的相似度度量不会受指标刻度的影响，余弦值落于区间[-1,1]，值越大，差异越小。但是针对具体应用，什么情况下使用欧氏距离，什么情况下使用余弦相似度？从几何意义上来说，n维向量空间的一条线段作为底边和原点组成的三角形，其顶角大小是不确定的。也就是说对于两条空间向量，即使两点距离一定，他们的夹角余弦值也可以随意变化。感性的认识，当两用户评分趋势一致时，但是评分值差距很大，余弦相似度倾向给出更优解。举个极端的例子，两用户只对两件商品评分，向量分别为(3,3)和(5,5)，这两位用户的认知其实是一样的，但是欧式距离给出的解显然没有余弦值合理。
+
+### 质心的计算及算法停止条件
+对于距离度量不管是采用欧式距离还是采用余弦相似度，簇的质心都是其均值，即向量各维取平均即可。对于距离对量采用其它方式时，这个还没研究过。
+一般是目标函数达到最优或者达到最大的迭代次数即可终止。对于不同的距离度量，目标函数往往不同。当采用欧式距离时，目标函数一般为最小化对象到其簇质心的距离的平方和。当采用余弦相似度时，目标函数一般为最大化对象到其簇质心的余弦相似度和。
+
+### 空聚类的处理
+ 如果所有的点在指派步骤都未分配到某个簇，就会得到空簇。如果这种情况发生，则需要某种策略来选择一个替补质心，否则的话，平方误差将会偏大。一种方法是选择一个距离当前任何质心最远的点。这将消除当前对总平方误差影响最大的点。另一种方法是从具有最大SSE的簇中选择一个替补的质心。这将分裂簇并降低聚类的总SSE。如果有多个空簇，则该过程重复多次。另外，编程实现时，要注意空簇可能导致的程序bug
+ 
+ ### 如何提升可伸缩性
+ 一种是使Kmeans在大数据集上更有效的方法是在聚类时使用合适规模的样本。另一种是使用过滤方法，使用空间层次数据索引节省计算均值开销。第三种方法是利用微聚类的思想，首先将临近的对象划分到一些微簇中，然后对微簇使用Kmeans方法进行聚类。
+ 
+ ## 适用范围及缺陷
+Kmenas算法试图找到使平凡误差准则函数最小的簇。当潜在的簇形状是凸面的，簇与簇之间区别较明显，且簇大小相近时，其聚类结果较理想。前面提到，该算法时间复杂度为O(tKmn)，与样本数量线性相关，所以，对于处理大数据集合，该算法非常高效，且伸缩性较好。但该算法除了要事先确定簇数K和对初始聚类中心敏感外，经常以局部最优结束，同时对“噪声”和孤立点敏感，并且该方法不适于发现非凸面形状的簇或大小差别很大的簇。
+       
+       
+## Kmeans算法实现（Python）
+**本次默认采用二维数据，k的值为4。**
+首先我们写一个数据发生器dataproducer:
+
+``` python
+import random
+
+#produce data points with given number k
+def prodecuerk_means(k):
+    f = open("kmeans.in",'w')
+
+
+    for i in range(k):
+        a = random.uniform(0.0,100.0)
+        b = random.uniform(0.0,100.0)
+        f.write(str(a))
+        f.write(" ")
+        f.write(str(b))
+        f.write("\n")
+
+prodecuerk_means(1000)
+```
+
+
+得到了一个规模为1000的随机二维数据集：
+![enter description here][1]
+
+下面实现Kmeans并利用matplotlib包进行数据可视化：
+
+``` python
+# -*- coding: utf-8 -*-
+import math
+import numpy as np
+import matplotlib.pyplot as plt
+
+# calculate the disrtance of two points
+def dist(a,b):
+    dis = math.sqrt((a[0]-b[0])*(a[0]-b[0])+(a[1]-b[1])*(a[1]-b[1]));
+    return dis
+
+def readfrominput():
+    f = open("kmeans.in")
+    datafromfile = f.readlines()
+    finaldata = []
+
+    for line in datafromfile:
+        tmp = line.split()
+        tmptuple = map(float,tmp)
+        finaldata.append(tmptuple)
+
+    return finaldata
+
+# split the data set into k subsets
+def kmeans(k):
+    dataset = readfrominput()
+    center = []
+    group = []
+    for i in range(k):
+        group.append([])
+
+    if dataset.__len__() < k:
+        print("Input Invalid(The number of group is greater than the number of data set!!!)")
+
+    # calculate the center of groups initially
+    for i in range(k):
+        center.append(dataset[i])
+
+    for point in dataset:
+        group[0].append(point)
+
+    #DrawPlot(group,1)
+
+    for times in range(0,100,1):
+
+        group = []
+        for i in range(k):
+            group.append([])
+
+        for point in dataset:
+            maxdist = dist(center[0],point)
+            groupindex = 0
+            for i in range(1,k,1):
+                tmpdist = dist(center[i],point)
+                if(tmpdist < maxdist):
+                    maxdist = tmpdist
+                    groupindex = i
+            group[groupindex].append(point)
+
+        for i in range(k):
+            x = 0.0
+            y = 0.0
+            for point in group[i]:
+                x += point[0]
+                y += point[1]
+            center[i][0] = x/group[i].__len__()
+            center[i][2] = y/group[i].__len__()
+    print group
+
+    plt.figure(figsize=(8, 5), dpi=80)
+    axes = plt.subplot(111)
+    # 将4类数据分别取出来
+    # x轴
+    # y轴
+    type1_x = []
+    type1_y = []
+    type2_x = []
+    type2_y = []
+    type3_x = []
+    type3_y = []
+    type4_x = []
+    type4_y = []
+    for i in range(k):
+        print group[i]
+        for point in group[i]:
+            xx=point[0]
+            yy=point[1]
+            #print "hahhaha\n"
+            #print xx
+            if i == 0:  # 1
+                type1_x.append(xx)
+                type1_y.append(yy)
+                #print type1_x
+                #print "hah\n"
+            if i == 1:  # 2
+                type2_x.append(xx)
+                type2_y.append(yy)
+            if i == 2:  # 3
+                type3_x.append(xx)
+                type3_y.append(yy)
+            if i == 3:  # 4
+                type4_x.append(xx)
+                type4_y.append(yy)
+        #print "hahhaha\n"
+        #print type2_y
+    type1 = axes.scatter(type1_x, type1_y, s=20, c='red')
+    type2 = axes.scatter(type2_x, type2_y, s=20, c='green')
+    print "hah\n"
+    print type2_x
+    type3 = axes.scatter(type3_x, type3_y, s=20, c='blue')
+    type4 = axes.scatter(type4_x, type4_y, s=20, c='yellow')
+    # plt.scatter(matrix[:, 0], matrix[:, 1], s=20 * numpy.array(labels),
+    #             c=50 * numpy.array(labels), marker='o',
+    #             label='test')
+    plt.xlabel("X")
+    plt.ylabel("Y")
+    axes.legend((type1, type2, type3, type4), ('1', '2', '3', '4'), loc=1)
+    plt.show()
+
+
+kmeans(4)
+
+```
+ 初始数据结果如下：
+ ![enter description here][3]
+经过Kmeans处理过之后数据如下：
+![enter description here][4]
+可以看出数据被分成了四类分别在矩形的四个方向，符合随机预期。
+
+
+  [1]: ./images/1496227804430.jpg "1496227804430.jpg"
+  [2]: ./images/1496227804430.jpg "1496227804430.jpg"
+  [3]: ./images/1496227918624.jpg "1496227918624.jpg"
+  [4]: ./images/1496227984754.jpg "1496227984754.jpg"
