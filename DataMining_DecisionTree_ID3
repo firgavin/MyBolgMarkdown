@@ -46,7 +46,15 @@ grammar_cjkRuby: true
 
 ### 属性选择度量
 #### 信息增益
+<img src="http://chart.googleapis.com/chart?cht=tx&chl= Info(D)=-\sum_{i=1}^{m}p_{i}log_{2}(p_{i})" style="border:none;">
+<br>
+<img src="http://chart.googleapis.com/chart?cht=tx&chl= Info_{A}(D)=\sum^{v}_{j=1}\frac{ \left | D_{j} \right |}{ \left | D \right |}\times Info(D_{j})" style="border:none;">
+<br>
+<img src="http://chart.googleapis.com/chart?cht=tx&chl= Gain(A)=Info(D)-Info_A(D)" style="border:none;">
+
 #### 增益率
+
+
 #### 基尼指数
 
 ### 树剪枝
