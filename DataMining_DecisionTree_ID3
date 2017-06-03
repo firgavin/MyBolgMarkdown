@@ -40,36 +40,64 @@ grammar_cjkRuby: true
 ### 分裂准则对应元祖划分的可能性
 根据分裂准则划分元组共有三种可能性，设A是分裂属性：
 
-> A是离散值：对A的每个已知值产生一个分枝。
-> A是连续值：产生两个分枝，选定split_point，分别对应A<=split_point和A>split_point。
+> A是离散值：对A的每个已知值产生一个分枝。<br>
+> A是连续值：产生两个分枝，选定split_point，分别对应A<=split_point和A>split_point。<br>
 > A是离散值且必须要产生二叉树：测试形如A属于S，其中S是A的分裂子集。
 
 ### 属性选择度量
-#### 信息增益
+#### 信息增益（ID3）
+对D中元组分类所需要的期望信息（D的熵）：
 <img src="http://chart.googleapis.com/chart?cht=tx&chl= Info(D)=-\sum_{i=1}^{m}p_{i}log_{2}(p_{i})" style="border:none;">
 <br>
+对D中的元组按某个属性进行划分后的信息度量：
 <img src="http://chart.googleapis.com/chart?cht=tx&chl= Info_{A}(D)=\sum^{v}_{j=1}\frac{ \left | D_{j} \right |}{ \left | D \right |}\times Info(D_{j})" style="border:none;">
 <br>
+信息增益，原来信息需求与新的信息需求之间的差：
 <img src="http://chart.googleapis.com/chart?cht=tx&chl= Gain(A)=Info(D)-Info_A(D)" style="border:none;">
+<br>
+选择**信息增益高的属性**作为分裂属性即可。
 
-#### 增益率
-	
+#### 增益率（C4.5）
+分裂信息值，将信息增益规范化，定义如下：	
 <img src="http://chart.googleapis.com/chart?cht=tx&chl= SplitInfo_{A}(D)=-\sum_{j=1}^{v}\frac{\left| D_{j} \right|}{ \left | D \right |}\times log_{2}(\frac{\left | D_{j} \right |}{\left | D \right |})" style="border:none;">
 <br>
+增益率的定义如下：
 <img src="http://chart.googleapis.com/chart?cht=tx&chl= GrianRate(A)=\frac{Grain(A)}{SplitInfo_{A}(D)}" style="border:none;">
+<br>
+选择具有最大增益率的属性作为分裂属性，需要注意，随着划分信息趋向0该比率会变得不稳定。此时需要加一个约束：选取的测试的信息增益必须较大，至少与考察的所有测试的平均增益一样大。
 
-#### 基尼指数
-
+#### 基尼指数（CART）
+基尼指数度量数据分区或者训练元组集的不纯度，定义如下：
 <img src="http://chart.googleapis.com/chart?cht=tx&chl= Gini(D)=1-\sum^{m}_{i=1}p_{i}^{2}" style="border:none;">
 <br>
+当考虑二元划分时，计算每个结果分区的不纯度的加权和（如将D划分成D1和D2）：
 <img src="http://chart.googleapis.com/chart?cht=tx&chl= Gini_{A}(D)= \frac{D_1}{D}Gini(D_1)+\frac{D_2}{D}Gini(D_2)" style="border:none;">
 <br>
+对离散或者连续值属性A的二元划分导致的不纯度降低为：
 <img src="http://chart.googleapis.com/chart?cht=tx&chl=\Delta Gini(A)=Gini(D)-Gini_A(D)" style="border:none;">
-
+<br>
+最大化不纯度降低（等价的，具有最小基尼指数）的属性选择为分裂属性。该属性和它的分裂子集（对离散值得分裂属性）或者分裂点（对连续值的分裂属性）一起形成分裂准则。
 ### 树剪枝
+#### 为什么要剪枝
+决策树是充分考虑了所有的数据点而生成的复杂树，有可能出现**过拟合**的情况，决策树越复杂，过拟合的程度会越高。<br>考虑极端的情况，如果我们令所有的叶子节点都只含有一个数据点，那么我们能够保证所有的训练数据都能准确分类，但是很有可能得到高的预测误差，原因是将训练数据中所有的噪声数据都”准确划分”了，强化了噪声数据的作用。 <br>剪枝修剪分裂前后分类误差相差不大的子树，能够降低决策树的复杂度，降低过拟合出现的概率。
+#### 剪枝方案
 
+1、REP—错误率降低剪枝
+顾名思义，该剪枝方法是根据错误率进行剪枝，如果一棵子树修剪前后错误率没有下降，就可以认为该子树是可以修剪的。REP剪枝需要用新的数据集，原因是如果用旧的数据集，不可能出现分裂后的错误率比分裂前错误率要高的情况。由于使用新的数据集没有参与决策树的构建，能够降低训练数据的影响，降低过拟合的程度，提高预测的准确率。
 
-### 可伸缩性与决策树归纳
+2、PEP—悲观剪枝
+悲观剪枝认为如果决策树的精度在剪枝前后没有影响的话，则进行剪枝。怎样才算是没有影响？如果剪枝后的误差小于剪枝前经度的上限，则说明剪枝后的效果与剪枝前的效果一致，此时要进行剪枝。进行剪枝必须满足的条件：
+![enter description here][1]
+
+3、CCP—代价复杂度剪枝
+代价复杂度选择节点表面误差率增益值最小的非叶子节点，删除该非叶子节点的左右子节点，若有多个非叶子节点的表面误差率增益值相同小，则选择非叶子节点中子节点数最多的非叶子节点进行剪枝。
+可描述如下：
+      令决策树的非叶子节点为![enter description here][2]。
+      a） 计算所有非叶子节点的表面误差率增益值  
+      b）选择表面误差率增益值最小的非叶子节点（若多个非叶子节点具有相同小的表面误差率增益值，选择节点数最多的非叶子节点）。
+      c）对选中的非叶子节点进行剪枝
+表面误差率增益值的计算公式：
+![enter description here][3]
 
 ## DecisionTree_ID3实现（Python）
 ``` python
@@ -263,10 +291,17 @@ classificaion=classify(myTree,labels,[1,0])
 print classificaion
 ```
 
-![enter description here][1]
+> **结果如下（决策树打印和简单分类结果）**：
 
-![enter description here][2]
+![enter description here][4]
+
+> **打印决策树**：
+
+![enter description here][5]
 
 
-  [1]: ./images/1496465553482.jpg "1496465553482.jpg"
-  [2]: ./images/1496465745029.jpg "1496465745029.jpg"
+  [1]: ./images/1496498807023.jpg "1496498807023.jpg"
+  [2]: ./images/1496498898547.jpg "1496498898547.jpg"
+  [3]: ./images/1496498907039.jpg "1496498907039.jpg"
+  [4]: ./images/1496465553482.jpg "1496465553482.jpg"
+  [5]: ./images/1496465745029.jpg "1496465745029.jpg"
