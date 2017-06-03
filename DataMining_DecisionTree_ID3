@@ -53,11 +53,22 @@ grammar_cjkRuby: true
 <img src="http://chart.googleapis.com/chart?cht=tx&chl= Gain(A)=Info(D)-Info_A(D)" style="border:none;">
 
 #### 增益率
-
+	
+<img src="http://chart.googleapis.com/chart?cht=tx&chl= SplitInfo_{A}(D)=-\sum_{j=1}^{v}\frac{\left| D_{j} \right|}{ \left | D \right |}\times log_{2}(\frac{\left | D_{j} \right |}{\left | D \right |})" style="border:none;">
+<br>
+<img src="http://chart.googleapis.com/chart?cht=tx&chl= GrianRate(A)=\frac{Grain(A)}{SplitInfo_{A}(D)}" style="border:none;">
 
 #### 基尼指数
 
+<img src="http://chart.googleapis.com/chart?cht=tx&chl= Gini(D)=1-\sum^{m}_{i=1}p_{i}^{2}" style="border:none;">
+<br>
+<img src="http://chart.googleapis.com/chart?cht=tx&chl= Gini_{A}(D)= \frac{D_1}{D}Gini(D_1)+\frac{D_2}{D}Gini(D_2)" style="border:none;">
+<br>
+<img src="http://chart.googleapis.com/chart?cht=tx&chl=\Delta Gini(A)=Gini(D)-Gini_A(D)" style="border:none;">
+
 ### 树剪枝
+
+
 ### 可伸缩性与决策树归纳
 
 ## DecisionTree_ID3实现（Python）
@@ -251,3 +262,11 @@ myDat, labels = createDataSet()
 classificaion=classify(myTree,labels,[1,0])
 print classificaion
 ```
+
+![enter description here][1]
+
+![enter description here][2]
+
+
+  [1]: ./images/1496465553482.jpg "1496465553482.jpg"
+  [2]: ./images/1496465745029.jpg "1496465745029.jpg"
