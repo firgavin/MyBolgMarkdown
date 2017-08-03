@@ -1,0 +1,51 @@
+---
+title: fiware docker container service挖坑
+tags: 新建,模板,小书匠
+grammar_cjkRuby: true
+---
+
+
+### docekr环境配置
+
+### 虚拟环境验证
+基于VMware搭建一个swarm集群管理包括
+- manager管理节点1台（manager1）
+- worker工作节点2台（worker1、worker2）
+
+设置VMware的NAT网络（VMnet8），取消DHCP。
+对每台节点设置静态IP（ubuntu14.04）：
+修改`/etc/network/interfaces`:
+
+``` bash
+# interfaces(5) file used by ifup(8) and ifdown(8)
+auto lo
+iface lo inet loopback
+auto eth0
+iface eth0 inet static
+address 192.168.221.128 #每台节点的IP不同
+gateway 192.168.221.2
+netmask 255.255.255.0
+
+```
+
+配置域名解析，再修改`/etc/resolvconf/resolv.conf.d/base`：
+
+``` stylus
+nameserver 192.168.221.2
+nameserver 8.8.8.8
+nameserver 114.114.114.114
+
+```
+或者在`/etc/network/interfaces`最后加入:
+
+``` stylus
+dns-nameservers 8.8.8.8
+```
+
+重启系统即可静态IP上网。
+
+
+
+
+
+
