@@ -1,0 +1,117 @@
+---
+title: etcd学习笔记（一）
+tags: etcd
+grammar_cjkRuby: true
+---
+
+
+什么是etcd,etcd是一个数据库,它的目标是构建一个高可用的**分布式键值数据库**,它是基于Go语言实现.在分布式系统中,各种服务的配置信息的管理分享,服务的发现是一个很基本同时也是很重要的问题.CoreOS项目就希望基于etcd来解决这一问题.
+
+etcd再设计的时候重点考虑了下面四个要素:
+1.简单:支持REST风格的HTTP+JSON API
+2.安全:支持HTTPS方式的访问
+3.快速:支持并发1k/s的写操作
+4.可靠:支持分布式结构,基于Raft的一致性算法.
+ 
+一般情况下,用户使用etcd可以在多个节点上启动多个实例,并添加它们为一个集群,同一个集群中的etcd实例将会保持彼此信息的一致性.
+
+
+#### 安装etcd
+安装etcd，可以去官网下载源码包，或者通过官方的脚本，但是需要翻墙，网速较慢：
+
+``` stylus
+#!/bin/sh
+
+ETCD_VER=v3.2.5
+
+# choose either URL
+GOOGLE_URL=https://storage.googleapis.com/etcd
+GITHUB_URL=https://github.com/coreos/etcd/releases/download
+DOWNLOAD_URL=${GITHUB_URL}
+
+rm -f /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
+rm -rf /tmp/etcd-download-test && mkdir -p /tmp/etcd-download-test
+
+curl -L ${DOWNLOAD_URL}/${ETCD_VER}/etcd-${ETCD_VER}-linux-amd64.tar.gz -o /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz
+tar xzvf /tmp/etcd-${ETCD_VER}-linux-amd64.tar.gz -C /tmp/etcd-download-test --strip-components=1
+
+/tmp/etcd-download-test/etcd --version
+<<COMMENT
+etcd Version: 3.2.5
+Git SHA: d0d1a87
+Go Version: go1.8.3
+Go OS/Arch: linux/amd64
+COMMENT
+
+ETCDCTL_API=3 /tmp/etcd-download-test/etcdctl version
+<<COMMENT
+etcdctl version: 3.2.5
+API version: 3.2
+COMMENT
+```
+下面给一个不用翻墙，但是版本较低：
+
+``` stylus
+curl -L  https://github.com/coreos/etcd/releases/download/v2.0.0-rc.1/etcd-v2.0.0-rc.1-linux-amd64.tar.gz -o etcd-v2.0.0-rc.1-linux-amd64.tar.gz  
+tar xzvf etcd-v2.0.0-rc.1-linux-amd64.tar.gz  
+cd etcd-v2.0.0-rc.1-linux-amd64  
+$ls  
+etcd  etcdctl  etcd-migrate  README-etcdctl.md  README.md  
+
+# 其中etcd是服务主文件,etcdctl是提供给用户的命令客户端,etcd-migrate负责进行迁移.
+```
+
+将其中的可执行问下放入目录/usr/bin/下：
+
+``` stylus
+$cp etcd* /usr/local/bin/  
+```
+
+#### 初步使用etcd
+
+- 启动etcd：
+按默认方式启动，运行etcd,组建一个两个节点的集群.数据库服务默认监听在2379和4001端口,etcd实例监听在2380和7001端口.显示类似如下的信息:
+``` stylus
+firgavin@Key-Value_store_server:/tmp/etcd-v2.0.0-rc.1-linux-amd64$ etcd
+2017/08/10 17:09:13 no data-dir provided, using default data-dir ./default.etcd
+2017/08/10 17:09:13 etcd: listening for peers on http://localhost:2380
+2017/08/10 17:09:13 etcd: listening for peers on http://localhost:7001
+2017/08/10 17:09:13 etcd: listening for client requests on http://localhost:2379
+2017/08/10 17:09:13 etcd: listening for client requests on http://localhost:4001
+2017/08/10 17:09:13 etcdserver: name = default
+2017/08/10 17:09:13 etcdserver: data dir = default.etcd
+2017/08/10 17:09:13 etcdserver: snapshot count = 10000
+2017/08/10 17:09:13 etcdserver: advertise client URLs = http://localhost:2379,http://localhost:4001
+2017/08/10 17:09:13 etcdserver: initial advertise peer URLs = http://localhost:2380,http://localhost:7001
+2017/08/10 17:09:13 etcdserver: initial cluster = default=http://localhost:2380,default=http://localhost:7001
+2017/08/10 17:09:13 etcdserver: start member ce2a822cea30bfca in cluster 7e27652122e8b2ae
+2017/08/10 17:09:13 raft: ce2a822cea30bfca became follower at term 0
+2017/08/10 17:09:13 raft: newRaft ce2a822cea30bfca [peers: [], term: 0, commit: 0, lastindex: 0, lastterm: 0]
+2017/08/10 17:09:13 raft: ce2a822cea30bfca became follower at term 1
+2017/08/10 17:09:13 etcdserver: added local member ce2a822cea30bfca [http://localhost:2380 http://localhost:7001] to cluster 7e27652122e8b2ae
+2017/08/10 17:09:14 raft: ce2a822cea30bfca is starting a new election at term 1
+2017/08/10 17:09:14 raft: ce2a822cea30bfca became candidate at term 2
+2017/08/10 17:09:14 raft: ce2a822cea30bfca received vote from ce2a822cea30bfca at term 2
+2017/08/10 17:09:14 raft: ce2a822cea30bfca became leader at term 2
+2017/08/10 17:09:14 raft.node: ce2a822cea30bfca elected leader ce2a822cea30bfca at term 2
+2017/08/10 17:09:14 etcdserver: published {Name:default ClientURLs:[http://localhost:2379 http://localhost:4001]} to cluster 7e27652122e8b2ae
+
+```
+
+- 测试etcd
+
+此时,可以使用etcdctl命令进行测试,设置和获取键值testkey:”hello world”,检查etcd服务是否启动成功:
+
+``` stylus
+firgavin@Key-Value_store_server:~$ etcdctl set testkey "hello world"
+hello world
+firgavin@Key-Value_store_server:~$ etcdctl get testkey
+hello world
+
+# 服务启动成功
+```
+
+
+
+
+
