@@ -1,0 +1,75 @@
+---
+title: docker快速部署wordpress
+tags: 新建,模板,小书匠
+grammar_cjkRuby: true
+---
+
+
+- 概念
+**Docker**：Docker 是一个开源的应用容器引擎，让开发者可以打包他们的应用以及依赖包到一个可移植的容器中，然后发布到任何流行的 Linux 机器上，也可以实现虚拟化。容器是完全使用沙箱机制。
+**Wordpress**：是一种使用PHP语言开发的博客平台，用户可以在支持PHP和MySQL数据库的服务器上架设属于自己的网站。也可以把 WordPress当作一个内容管理系统（CMS）来使用。
+**MySQL**：关系型数据库，作为Wordpress网站的数据存储介质。
+
+- 环境
+腾讯云服务器（ubuntu server 16.04）、Xshell
+
+#### 部署流程
+首先Xshell远程登录，查看系统版本：
+
+``` stylus
+ubuntu@VM-32-149-ubuntu:~$ cat /etc/os-release 
+NAME="Ubuntu"
+VERSION="16.04.1 LTS (Xenial Xerus)"
+ID=ubuntu
+ID_LIKE=debian
+PRETTY_NAME="Ubuntu 16.04.1 LTS"
+VERSION_ID="16.04"
+HOME_URL="http://www.ubuntu.com/"
+SUPPORT_URL="http://help.ubuntu.com/"
+BUG_REPORT_URL="http://bugs.launchpad.net/ubuntu/"
+UBUNTU_CODENAME=xenial
+
+```
+
+在ubuntu的16.04的版本中可以直接用apt安装docker，但是版本不是最新的：
+
+``` bash
+# 这里不用更新source.list，镜像被腾讯定制过
+ubuntu@VM-32-149-ubuntu:~$ sudo apt-get install docker-compose 
+
+```
+
+再去Daocloud上注册账号获取国内docker镜像加速源：
+
+``` stylus
+sudo curl -sSL https://get.daocloud.io/daotools/set_mirror.sh | sh -s http://ed253a03.m.daocloud.io
+ubuntu@VM-32-149-ubuntu:~$ sudo service docker restart 
+```
+拉取MySQL镜像并docker run：
+
+``` stylus
+ubuntu@VM-32-149-ubuntu:~$ sudo docker run -d --name wp-mysql -e MYSQL_ROOT_PASSWORD=123456 -p 3336:3306 mysql
+
+```
+
+拉取wp镜像并和MySQL容器关联：
+
+``` stylus
+ubuntu@VM-32-149-ubuntu:~$ sudo docker run -d --name my-wp --link wp-mysql:mysql -p 80:80 wordpress
+
+```
+查看容器启动情况：
+
+``` stylus
+ubuntu@VM-32-149-ubuntu:~$ sudo docker ps
+CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                    NAMES
+c6df1a4e4fb9        wordpress           "docker-entrypoint.sh"   3 minutes ago       Up 3 minutes        0.0.0.0:80->80/tcp       my-wp
+c9bf23f6f710        mysql               "docker-entrypoint.sh"   6 minutes ago       Up 6 minutes        0.0.0.0:3336->3306/tcp   wp-mysql
+
+```
+至此基本完成，用公网IP登陆即可对对个站进行配置即可。
+建议先进行域名解析后再进行配置，不然会导致wp无法很好地加载资源和访问。
+
+
+
+
