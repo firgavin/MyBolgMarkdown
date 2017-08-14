@@ -1,0 +1,104 @@
+---
+title: 过气的ACMer刷笔试题 
+tags: code
+grammar_cjkRuby: true
+---
+### 网易-Fibonacci数列
+[题目传送门][1]
+
+思路：数量较小，暴力找即可，可打表优化。
+
+``` c++
+//菲波那切数列
+#include<iostream>
+#include<math.h>
+
+using namespace std;
+
+int main(void)
+{
+	int n;
+	int a=0,b=1,c;
+	cin>>n;
+	while(b<=n)
+	{
+		c=a+b;
+		a=b;
+		b=c;
+	}
+	int ret=min(abs(n-a),abs(b-n));
+	cout<<ret<<endl;
+	
+	return 0;
+}
+```
+
+### 网易-解救小易
+[题目传送门][2]
+
+思路：找曼哈顿距离最小即可，可剪枝意义不大。
+
+``` c++
+#include<iostream>
+#include<math.h>
+
+using namespace std;
+
+int main(void)
+{
+	int n,x[1000+1],y,ret=1000+1000;
+	
+	cin>>n;
+	for(int i=0;i<n;i++) cin>>x[i];
+	for(int i=0;i<n;i++)
+	{
+		cin>>y;
+		ret=min(ret,(x[i]-1)+(y-1));
+	} 
+	cout<<ret<<endl;
+	
+	return 0;
+}
+```
+
+### 去哪儿网-省份证分组
+[题目传送门][3]
+
+思路：对6、14单判即可。尝试用STL解决未果。
+
+``` c++ 
+#include<iostream>
+#include<string>
+#include<math.h>
+
+using namespace std;
+
+int main(void)
+{
+	string s;
+	while(getline(cin,s))
+	{
+		int cnt=0;
+		for(int i=0;i<s.size();++i)
+		{
+			if(s[i]!=' ')
+			{
+				++cnt;
+				cout<<s[i];
+				if(cnt==6 || cnt==14)
+				{
+					cout<<' ';
+				}
+			}
+		}
+		cout<<endl;
+	}
+	
+	return 0;
+}
+```
+
+
+  [1]: https://www.nowcoder.com/practice/18ecd0ecf5ef4fe9ba3f17f8d00d2d66?tpId=85&tqId=29846&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
+  [2]: https://www.nowcoder.com/practice/cd763d8541fc4243b8d3b967bb6d6b6a?tpId=85&tqId=29841&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
+  [3]: https://www.nowcoder.com/practice/58766632a6cc45c0a1158fea2db91728?tpId=85&tqId=29888&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
