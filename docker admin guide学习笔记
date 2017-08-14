@@ -1,0 +1,103 @@
+---
+title: docker admin guide学习笔记 
+tags: docker
+grammar_cjkRuby: true
+---
+https://docs.docker.com/engine/admin/#force-a-stack-trace-to-be-logged
+
+#### 启动docker daemon
+- 一般来说，docker会随操作系统开机自启。
+
+出于debug目的时，也可以手动启动，docker会前台启动并直接在terminal中打印logs。
+``` stylus
+$ dockerd
+
+INFO[0000] +job init_networkdriver()
+INFO[0000] +job serveapi(unix:///var/run/docker.sock)
+INFO[0000] Listening for HTTP on unix (/var/run/docker.sock)
+...
+```
+
+#### 配置docker daemon
+- 配置启动参数主要是`dockerd`的configuration options。
+- 可以直接cli带参数启动，也可以配置`daemon.json`启动，后者启动配置长期生效，推荐后者。
+
+下面两种方式等价：
+
+``` stylus
+# 直接cli带参数启动
+$ dockerd -D --tls=true --tlscert=/var/docker/server.pem --tlskey=/var/docker/serverkey.pem -H tcp://192.168.59.3:2376
+
+# 编辑daemon.json启动
+{
+  "debug": true,
+  "tls": true,
+  "tlscert": "/var/docker/server.pem",
+  "tlskey": "/var/docker/serverkey.pem",
+  "hosts": ["tcp://192.168.59.3:2376"]
+}
+```
+
+#### 对daemon进行故障排查
+- 故障排查首先确保hosts有充足的memory防止Out Of Memory Exception (OOME)。
+- 其次要开启日志，在`/etc/docker/daemon.json`中加入`"debug": true`键值对，没有daemo.json就新建一个。
+
+
+| Operating system | Location |
+| ---------------- | -------- |
+| RHEL, Oracle Linux | /var/log/messages |
+| Debian | /var/log/daemon.log |
+| Ubuntu 16.04+, CentOS	| Use the command `journalctl -u docker.service` |
+| Ubuntu 14.10-	| /var/log/upstart/docker.log |
+| macOS	| ~/Library/Containers/com.docker.docker/Data/com.docker.driver.amd64-linux/console-ring
+| Windows | AppData\Local |
+
+另外，首次配置完后要重载配置或者直接重启（当然不适用与生产环境）：
+
+``` bash
+$ sudo kill -SIGHUP $(pidof dockerd)
+```
+之后要是daemon没有反应则强制日志启动：
+
+``` stylus
+$ sudo kill -SIGUSR1 $(pidof dockerd)
+```
+
+#### 检查docker运行状态
+
+``` stylus
+# 方式一
+ubuntu@VM-32-149-ubuntu:/etc/docker$ sudo systemctl is-active docker
+active
+
+# 方式二
+ubuntu@VM-32-149-ubuntu:/etc/docker$ sudo service docker status 
+● docker.service - Docker Application Container Engine
+   Loaded: loaded (/lib/systemd/system/docker.service; enabled; vendor preset: enabled)
+   Active: active (running) since Sat 2017-08-12 10:28:25 CST; 2 days ago
+     Docs: https://docs.docker.com
+ Main PID: 22759 (dockerd)
+    Tasks: 52
+   Memory: 65.5M
+      CPU: 1min 42.999s
+   CGroup: /system.slice/docker.service
+           ├─22759 /usr/bin/dockerd -H fd://
+           ├─22766 containerd -l unix:///var/run/docker/libcontainerd/docker-containerd.sock --shim contain
+           ├─25373 /usr/bin/docker-proxy -proto tcp -host-ip 0.0.0.0 -host-port 3336 -container-ip 172.17.0
+           ├─25378 containerd-shim 18fa5b464b27f726e0d298f0b828db7c345ecb217b8e0bbc5f45d5f4c71572dd /var/ru
+           ├─26785 /usr/bin/docker-proxy -proto tcp -host-ip 0.0.0.0 -host-port 80 -container-ip 172.17.0.3
+           └─26825 containerd-shim b1487977389c5358cd09b0c432f8932fc4e9ece17aaba4115221068c06dbd652 /var/ru
+
+Warning: Journal has been rotated since unit was started. Log output is incomplete or unavailable.
+
+# 方式三
+ubuntu@VM-32-149-ubuntu:/etc/docker$ sudo docker stats 
+
+CONTAINER           CPU %               MEM USAGE / LIMIT       MEM %               NET I/O               BLOCK I/O             PIDS
+b1487977389c        0.00%               110.2 MiB / 864.5 MiB   12.75%              272.5 MB / 239 MB     30.72 MB / 0 B        11
+18fa5b464b27        0.00%               209.9 MiB / 864.5 MiB   24.28%              47.34 MB / 259.8 MB   29.19 MB / 304.5 MB   33
+
+```
+
+
+
