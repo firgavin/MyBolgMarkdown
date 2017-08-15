@@ -289,6 +289,65 @@ int main()
 }
 ```
 
+### 网易-数字翻转
+[enter description here][10]
+
+思路：对数取余加上sum乘10循环即可。考察代码基本功。	
+
+``` stylus
+#include<iostream>
+#include<string>
+
+using namespace std;
+
+int rev(int a)
+{
+    int sum=0;
+    while(a)
+    {
+    	sum=(sum+a%10)*10;
+    	a=a/10;
+    }
+	return sum/10;
+}
+int main(void)
+{
+	int x,y;
+	
+	while(cin>>x>>y)
+	{
+		cout<<rev(rev(x)+rev(y))<<endl;
+	}
+} 
+```
+
+### 网易-小易喜欢的单词
+复杂字符串处理，待解；
+
+### 去哪儿网-fliename
+[题目传送门][11]
+
+思路：用好STL即可。
+``` stylus
+#include<iostream>
+#include<string>
+
+using namespace std;
+
+int main(void)
+{
+	string str;
+	
+	while(cin>>str)
+	{
+		if(str.find('.')!=str.npos)
+			cout<<str.substr(str.find('.')+1)<<endl;
+		else
+			cout<<"null"<<endl;
+	}
+}
+```
+
 
   [1]: https://www.nowcoder.com/practice/18ecd0ecf5ef4fe9ba3f17f8d00d2d66?tpId=85&tqId=29846&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
   [2]: https://www.nowcoder.com/practice/cd763d8541fc4243b8d3b967bb6d6b6a?tpId=85&tqId=29841&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
@@ -299,3 +358,5 @@ int main()
   [7]: https://www.nowcoder.com/practice/e27b9fc9c0ec4a17a5064fb6f5ab13e4?tpId=85&tqId=29883&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
   [8]: https://www.nowcoder.com/practice/18ecd0ecf5ef4fe9ba3f17f8d00d2d66?tpId=85&tqId=29846&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
   [9]: https://www.nowcoder.com/practice/c96d6acc025541ffb79c579688f8d003?tpId=85&tqId=29872&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
+  [10]: https://www.nowcoder.com/practice/bc62febdd1034a73a62224affe8bddf2?tpId=85&tqId=29854&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
+  [11]: https://www.nowcoder.com/practice/7eb53c86e50845f6a2eafe7ea0fe9ef9?tpId=85&tqId=29886&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
