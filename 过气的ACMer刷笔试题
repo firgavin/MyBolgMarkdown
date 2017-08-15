@@ -153,6 +153,97 @@ int main(void)
 } 
 ```
 
+### 京东-幸运数
+[题目传送门][6]
+
+思路：打表。
+
+``` stylus
+#include<iostream>
+#include<string>
+#include<set>
+
+using namespace std;
+
+int f(int a)
+{
+	int sum=0;
+	while(a)
+	{
+		sum+=a%10;
+		a=a/10;
+	}
+	return sum;
+}
+
+int g(int a)
+{
+	int sum=0;
+	while(a)
+	{
+		sum+=a%2;
+		a=a/2;
+	}
+	return sum;
+}
+
+int ret[100001];
+
+int main(void)
+{
+	int n;
+	
+	for(int i=1;i<100001;i++)
+	{
+		if(f(i)==g(i))
+		{
+			ret[i]=ret[i-1]+1;
+		}else{
+			ret[i]=ret[i-1];
+		}
+	} 
+	while(cin>>n)
+	{
+		cout<<ret[n]<<endl;
+	}
+} 
+```
+
+### 美团-网格走法数目
+[题目传送门][7]
+
+思路：在金山的面试中也碰到了，一个`n*m`的网格走一个对角线，无论怎么走都要走m+n步，唯一的问题就是每步是横着走还是竖着走，那就是从n+m中选m步横着走，直接组合数。注意不要犯傻2^(n+m)，举个例子，先横着一步再竖着一步，和先竖着一步再横着一步是到达的是同一个位置，存在重复位置。打表即可。
+
+``` stylus
+# C(n, m)  = C(n -1, m - 1) + C(n - 1, m)
+
+#include<iostream>
+
+using namespace std;
+const int N=21;
+long long int C[N][N];
+
+int main(void)
+{
+	int x,y;
+	
+	C[1][0] = C[1][1] = 1;  
+    for (int i = 2; i < N; i++)
+	{  
+        C[i][0] = 1;  
+        for (int j = 1; j < N; j++)  
+        {
+            C[i][j] = (C[i - 1][j] + C[i - 1][j - 1]);  
+        	//cout<<C[i][j];
+    	}
+    }  
+
+	while(cin>>x>>y)
+	{
+		cout<<C[x+y][x]<<endl;
+	}
+}
+```
 
 
   [1]: https://www.nowcoder.com/practice/18ecd0ecf5ef4fe9ba3f17f8d00d2d66?tpId=85&tqId=29846&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
@@ -160,3 +251,5 @@ int main(void)
   [3]: https://www.nowcoder.com/practice/58766632a6cc45c0a1158fea2db91728?tpId=85&tqId=29888&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
   [4]: https://www.nowcoder.com/practice/2f45f0ef94724e06a4173c91ef60781c?tpId=85&tqId=29871&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
   [5]: https://www.nowcoder.com/practice/ca5c9ba9ebac4fd5ae9ba46114b0f476?tpId=85&tqId=29832&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
+  [6]: https://www.nowcoder.com/practice/4d1afe11171c44a385287e29092cdb3f?tpId=85&tqId=29881&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
+  [7]: https://www.nowcoder.com/practice/e27b9fc9c0ec4a17a5064fb6f5ab13e4?tpId=85&tqId=29883&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
