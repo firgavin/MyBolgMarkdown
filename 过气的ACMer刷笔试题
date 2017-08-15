@@ -227,7 +227,7 @@ int main(void)
 {
 	int x,y;
 	
-	C[1][0] = C[1][1] = 1;  
+	C[1][0] = C[1][8] = 1;  
     for (int i = 2; i < N; i++)
 	{  
         C[i][0] = 1;  
@@ -245,6 +245,50 @@ int main(void)
 }
 ```
 
+### 腾讯-素数对
+[题目传送门][9]
+
+思路：这题我代码不够简洁，借鉴了别人的代码，直接筛素打表，是素数标记为1。然后折半单判即可。代码很舒服，应该是友军的代码hhh.
+
+``` stylus
+#include <iostream>
+#include <vector>
+#include <algorithm>
+ 
+using namespace std;
+
+int main()
+{
+    int n;
+    while( cin>>n )
+    {
+        //输入n
+        vector<int> v(1000,1);
+        for( int i=2; i<1000; ++i )
+        {
+            for( int j=2; i*j<1000; ++j )
+            {
+                if( v[i] )
+                {
+                    v[i*j]=0;
+                }
+            }
+        }
+         
+        int res;
+        for( int i=2; i<=n/2; i++ )
+        {
+            if( v[i] && v[n-i] )
+                ++res;
+        }
+        cout<<res<<endl;
+      }
+     
+     
+    return 0;
+}
+```
+
 
   [1]: https://www.nowcoder.com/practice/18ecd0ecf5ef4fe9ba3f17f8d00d2d66?tpId=85&tqId=29846&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
   [2]: https://www.nowcoder.com/practice/cd763d8541fc4243b8d3b967bb6d6b6a?tpId=85&tqId=29841&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
@@ -253,3 +297,5 @@ int main(void)
   [5]: https://www.nowcoder.com/practice/ca5c9ba9ebac4fd5ae9ba46114b0f476?tpId=85&tqId=29832&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
   [6]: https://www.nowcoder.com/practice/4d1afe11171c44a385287e29092cdb3f?tpId=85&tqId=29881&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
   [7]: https://www.nowcoder.com/practice/e27b9fc9c0ec4a17a5064fb6f5ab13e4?tpId=85&tqId=29883&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
+  [8]: https://www.nowcoder.com/practice/18ecd0ecf5ef4fe9ba3f17f8d00d2d66?tpId=85&tqId=29846&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
+  [9]: https://www.nowcoder.com/practice/c96d6acc025541ffb79c579688f8d003?tpId=85&tqId=29872&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
