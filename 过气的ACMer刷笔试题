@@ -98,7 +98,65 @@ int main(void)
 }
 ```
 
+### 腾讯-游戏任务标记
+[题目传送门][4]
+
+思路：这题有坑，本意是用32个int，就是`32*4*8=1024`个二进制位来储存结果，但是题目又说了默认初始都没有完成，每次只查询一次，所以只有输入相等时才会是1，坑比。
+
+``` stylus
+#include<iostream>
+
+using namespace std;
+
+int main(void)
+{
+	unsigned int a,b;
+	
+	while(cin>>a>>b)
+	{
+		if(a<1 || a>1024 || b<1 || b>1024)
+		{
+			cout<<-1<<endl;
+			continue;
+		}
+		if(a==b)
+			cout<<1<<endl;
+		else
+			cout<<0<<endl;
+	}
+} 
+```
+
+### 网易-下厨房
+[题目传送门][5]
+
+思路：set应用搞定。
+
+``` stylus
+#include<iostream>
+#include<string>
+#include<set>
+
+using namespace std;
+
+int main(void)
+{
+	set<string> myset;
+	string str;
+	
+	while(cin>>str)
+	{
+		myset.insert(str);
+	}
+	
+	cout<<myset.size()<<endl;
+} 
+```
+
+
 
   [1]: https://www.nowcoder.com/practice/18ecd0ecf5ef4fe9ba3f17f8d00d2d66?tpId=85&tqId=29846&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
   [2]: https://www.nowcoder.com/practice/cd763d8541fc4243b8d3b967bb6d6b6a?tpId=85&tqId=29841&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
   [3]: https://www.nowcoder.com/practice/58766632a6cc45c0a1158fea2db91728?tpId=85&tqId=29888&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
+  [4]: https://www.nowcoder.com/practice/2f45f0ef94724e06a4173c91ef60781c?tpId=85&tqId=29871&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
+  [5]: https://www.nowcoder.com/practice/ca5c9ba9ebac4fd5ae9ba46114b0f476?tpId=85&tqId=29832&tPage=1&rp=1&ru=/ta/2017test&qru=/ta/2017test/question-ranking
