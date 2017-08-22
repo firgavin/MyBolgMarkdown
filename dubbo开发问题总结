@@ -1,0 +1,49 @@
+---
+title: dubbo开发问题总结 
+tags: Java,dubbo,Spring
+grammar_cjkRuby: true
+---
+
+
+- 面向接口编程
+首先声明一个接口类，接口类中只声明接口的信息（返回参数、参数）；再声明一个接口的实现类class，在其中实现接口具体的逻辑。最后在测试类Main中，**声明一个接口类的对象，但是用接口实现类来实例化**。这样，对于外界只暴露接口，外界不知道接口的具体实现，我们修改接口的实现也不会影响正常使用。
+
+``` stylus
+# 接口类OneInterface.java
+public interface OneInterface {
+	String hello(String word);
+}
+
+# 接口实现类OneInterfaceImpl.java
+public class OneInterfaceImpl implements OneInterface {
+	
+	@Override
+	public String hello(String word) {
+		return "Word from interface \"OneInterface\":"+word;
+	}
+}
+
+# 测试类Main.java
+public class Main {
+	public static void main(String[] args) {
+		OneInterface oif = new OneInterfaceImpl();
+		
+		System.out.println(oif.hello("world"));
+	}
+}
+
+```
+
+- @Override的作用
+
+@Override是Java5的元数据，自动加上去的一个标志，告诉你说下面这个方法是从父类/接口 继承过来的，需要你重写一次，这样就可以方便你阅读，也不怕会忘记.
+@Override是**伪代码,表示重写**(当然不写也可以),不过写上有如下好处: 
+1. 可以当注释用,方便阅读 
+
+2. 编译器可以给你验证@Override下面的方法名是否是你父类中所有的,如果没有则报错 
+
+比如你如果没写@Override而你下面的方法名又写错了,这时你的编译器是可以通过的(它以为这个方法是你的子类中自己增加的方法) 
+
+使用该标记是为了**增强程序在编译时候的检查**，如果该方法并不是一个覆盖父类的方法，在编译时编译器就会报告错误。
+
+
