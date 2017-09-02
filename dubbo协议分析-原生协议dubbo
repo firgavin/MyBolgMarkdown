@@ -1,0 +1,17 @@
+---
+title: dubbo协议分析-原生协议dubbo:// 
+tags: dubbo
+grammar_cjkRuby: true
+---
+
+### 通信过程分析
+![dubbo协议通信模型][1]
+
+- Transporter: mina, netty, grizzy
+- Serialization: dubbo, hessian2, java, json
+- Dispatcher: all, direct, message, execution, connection
+- ThreadPool: fixed, cached
+
+首先，dubbo生成接口代理，接口代理通过客户端向服务器发送请求。对于通信请求的实体body需要序列化（使用hessian二进制序列化），通过NIO框架mina递交给服务器，分派调度再递交给线程池（ThreadPool），最后由接口实现来实现，从而完成从consumer到provider的服务调度。
+
+  [1]: http://dubbo.io/user-guide/sources/images/dubbo-protocol.jpg
