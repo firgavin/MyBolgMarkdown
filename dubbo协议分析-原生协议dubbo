@@ -4,6 +4,8 @@ tags: dubbo
 grammar_cjkRuby: true
 ---
 
+[toc]
+
 ### 通信过程分析
 ![dubbo协议通信模型][1]
 
@@ -13,5 +15,64 @@ grammar_cjkRuby: true
 - ThreadPool: fixed, cached
 
 首先，dubbo生成接口代理，接口代理通过客户端向服务器发送请求。对于通信请求的实体body需要序列化（使用hessian二进制序列化），通过NIO框架mina递交给服务器，分派调度再递交给线程池（ThreadPool），最后由接口实现来实现，从而完成从consumer到provider的服务调度。
+
+### 通信协议特点
+dubbo://缺省协议，使用基于mina1.1.7+hessian3.2.1的tbremoting交互。
+- 连接个数：单连接
+- 连接方式：长连接
+- 传输协议：TCP
+- 传输方式：NIO异步传输
+- 序列化：Hessian二进制序列化
+- 适用范围：传入传出参数**数据包较小**（建议小于100K），消费者比提供者个数多，单一消费者无法压满提供者，尽量不要用dubbo协议传输大文件或超大字符串。
+适用场景：常规远程服务方法调用
+
+### 适用场景问题分析
+- **为什么要消费者比提供者个数多?**
+因dubbo协议采用单一长连接，假设网络为千兆网卡(1024Mbit=128MByte)，根据测试经验数据每条连接最多只能压满7MByte(不同的环境可能不一样，供参考)，理论上1个服务提供者需要20个服务消费者才能压满网卡。
+
+- **为什么不能传大包?**
+因dubbo协议采用单一长连接，如果每次请求的数据包大小为500KByte，假设网络为千兆网卡(1024Mbit=128MByte)，每条连接最大7MByte(不同的环境可能不一样，供参考)，单个服务提供者的TPS(每秒处理事务数)最大为：128MByte / 500KByte = 262。单个消费者调用单个服务提供者的TPS(每秒处理事务数)最大为：7MByte / 500KByte = 14。如果能接受，可以考虑使用，否则网络将成为瓶颈。
+
+- **为什么采用异步单一长连接?**
+
+因为服务的现状大都是服务提供者少，通常只有几台机器，而服务的消费者多，如果采用常规的hessian服务，服务提供者很容易就被压跨，通过单一连接，保证单一消费者不会压死提供者，长连接，减少连接握手验证等，并使用异步IO，复用线程池，防止C10K问题。
+
+### dubbo协议配置参考
+
+``` xml
+<!-- 用dubbo协议在20880端口暴露服务 -->
+<dubbo:protocol name="dubbo" port="20880" />
+
+<!-- 设置默认协议 -->
+<dubbo:provider protocol="dubbo" />
+
+<!-- 设置服务协议 -->
+<dubbo:service protocol="dubbo" />
+
+<!-- 多端口 -->
+<dubbo:protocol name=“dubbo” port=“9090” server=“netty” client=“netty” codec=“dubbo” serialization=“hessian2” charset=“UTF-8” threadpool=“fixed” threads=“100” queues=“0” iothreads=“9” buffer=“8192” accepts=“1000” payload=“8388608” />
+```
+
+- Dubbo协议缺省每服务每提供者每消费者使用单一长连接，如果数据量较大，可以使用多个连接。
+
+``` xml
+<!--
+	<dubbo:service connections="0">或者<dubbo:reference connections="0">表示服务使用JVM共享长连接（缺省）。
+	<dubbo:service connections="1">或者<dubbo:reference connections="1">表示该服务使用独立长连接。
+	<dubbo:service connections="2">或者<dubbo:reference connections="2">表示该服务使用独立两条长连接。
+ -->
+<dubbo:protocol name="dubbo" connections="2" />
+```
+
+- 为防止被大量连接撑挂，可在服务提供方限制大接收连接数，以实现服务提供方自我保护。
+
+``` xml
+<dubbo:protocol name="dubbo" accepts="1000" />
+```
+
+
+
+
+
 
   [1]: http://dubbo.io/user-guide/sources/images/dubbo-protocol.jpg
