@@ -1,0 +1,15 @@
+---
+title: 解决maven：Perhaps you are running on a JRE rather than a JDK?
+tags: maven
+grammar_cjkRuby: true
+---
+
+
+**问题原因**：eclipse默认是运行在jre上的，
+但是maven插件需要使用jdk，因此需要在eclipse修改Installed JRES
+位置在-->【Window】-->【Prefrences】-->【Java】-->【Installed JREs】
+
+![enter description here][1]
+
+
+  [1]: ./images/1505710806803.jpg "1505710806803.jpg"
