@@ -9,7 +9,7 @@ grammar_cjkRuby: true
 但是maven插件需要使用jdk，因此需要在eclipse修改Installed JRES
 位置在-->【Window】-->【Prefrences】-->【Java】-->【Installed JREs】
 
-![enter description here][1]
+![要jdk不要JRE][1]
 
 
-  [1]: ./images/1505710806803.jpg "1505710806803.jpg"
+  [1]: http://cdn.awolau.com/java/eclipse-jdk.png
