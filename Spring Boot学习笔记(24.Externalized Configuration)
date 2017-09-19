@@ -1,0 +1,147 @@
+---
+title: Spring Boot学习笔记(24.Externalized Configuration) 
+tags: Spring
+grammar_cjkRuby: true
+---
+
+### Spring Boot特性
+
+#### Externalized Configuration
+
+Spring Boot允许你**外部化配置**所以你可以在不同的环境运行相同的代码。你可以使用**properties**、YAML、环境变量、命令行参数（command-line arguments）去外部化配置。property中的值可以直接通过@Value注解注入到bean中。
+
+SpringBoot中有一个关于Properties的优先顺序，详情https://docs.spring.io/spring-boot/docs/1.5.7.RELEASE/reference/htmlsingle/#boot-features-external-config
+
+
+示例，通过@Value注解拿到properties中的值：
+
+``` java
+import org.springframework.stereotype.*
+import org.springframework.beans.factory.annotation.*
+
+@Component
+public class MyBean {
+
+    @Value("${name}")
+    private String name;
+
+    // On your application classpath (e.g. inside your jar) you can have an application.properties that provides a sensible default property value for name
+
+}
+```
+还可以在命令行启动时通过参数注入例如`java -jar app.jar --name="Spring"`，后期也可以通过`SPRING_APPLICATION_JSON `来传值，有多种方式命令行环境变量均可。
+
+- Configuring random values
+RandomValuePropertySource可以注入随机值包括整型、长整型、uuids、字符串等。
+
+``` 
+my.secret=${random.value}
+my.number=${random.int}
+my.bignumber=${random.long}
+my.uuid=${random.uuid}
+my.number.less.than.ten=${random.int(10)}
+my.number.in.range=${random.int[1024,65536]}
+```
+
+- Accessing command line properties
+在命令行中注入值，就是`starting with ‘--’, e.g. --server.port=9000`。你也可以关闭这种方式，通过`SpringApplication.setAddCommandLineProperties(false)`。
+
+-  Application property files
+
+SpringApplication会去如下的路劲找properties：
+1. A `/config` subdirectory of the current directory.
+2. The current directory
+3. A classpath `/config` package
+4. The classpath root
+
+还有一堆定制的方式，不care。
+
+Profile-specific properties除了传统的命名方式即application.properties外还可以根据具体应用分开properties例如`application-{profile}.properties`。
+此外properties中的值可以即时引用，例如：
+
+``` stylus
+app.name=MyApp
+app.description=${app.name} is a Spring Boot application
+```
+
+
+- Using YAML instead of Properties
+实战在用，目前不care。
+详情：https://docs.spring.io/spring-boot/docs/1.5.7.RELEASE/reference/htmlsingle/#boot-features-external-config
+
+
+-  Type-safe Configuration Properties
+
+注解`@Value("${property}") `的方式太重了，特别是有多个properties或者工程存在层级关系时。
+Spring Boot提供一种灵活的方式，使用@ConfigurationProperties("foo")+POJO的方式：
+
+``` Java
+package com.example;
+
+import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties("foo")
+public class FooProperties {
+
+    private boolean enabled;
+
+    private InetAddress remoteAddress;
+
+    private final Security security = new Security();
+
+    public boolean isEnabled() { ... }
+
+    public void setEnabled(boolean enabled) { ... }
+
+    public InetAddress getRemoteAddress() { ... }
+
+    public void setRemoteAddress(InetAddress remoteAddress) { ... }
+
+    public Security getSecurity() { ... }
+
+    public static class Security {
+
+        private String username;
+
+        private String password;
+
+        private List<String> roles = new ArrayList<>(Collections.singleton("USER"));
+
+        public String getUsername() { ... }
+
+        public void setUsername(String username) { ... }
+
+        public String getPassword() { ... }
+
+        public void setPassword(String password) { ... }
+
+        public List<String> getRoles() { ... }
+
+        public void setRoles(List<String> roles) { ... }
+
+    }
+}
+```
+
+那么这POJO中定义了foo.enabled、foo.remote-address、foo.security.username、foo.security.password、foo.security.roles。
+在具体使用这些POJO时需要下面两个注解@Configuration、@EnableConfigurationProperties(Name.class)
+
+``` stylus
+@Configuration
+@EnableConfigurationProperties(FooProperties.class)//使用前需要注册properties
+public class MyConfiguration {
+}
+```
+
+当@ConfigurationPropertiesbean被注册的方式，bean将有一个惯用名称：-，这里是在指定的环境键前缀@ConfigurationProperties注释和Bean的完全合格的名称。如果注释不提供任何前缀，则仅使用该bean的完全限定名称。
+上面示例中的bean名称将是foo-com.example.FooProperties。
+
+
+
+	
+
