@@ -1,0 +1,171 @@
+---
+title: Spring Boot学习笔记 
+tags: spring
+grammar_cjkRuby: true
+---
+
+
+### Spring Boot特性
+
+#### SpringApplication
+- **引导Spring程序**
+The SpringApplication class provides a convenient way to bootstrap a Spring application that will be started from a main() method.
+
+``` stylus
+public static void main(String[] args) {
+    SpringApplication.run(MySpringConfiguration.class, args);
+}
+```
+如果启动报错需要手动查错：
+- 自己查看Description和Action。
+- Spring Boot provides numerous FailureAnalyzer implementations and you can add your own very easily.
+- To do so you need to enable the debug property or enable DEBUG logging
+
+主要是自己看报错信息解决，结局不了就debug。
+
+- **定制banner**
+定制banner，当程序启动的时候控制台会输出由字符组成的Spring符号。这个是SpringBoot为自己设计的Banner：
+
+``` stylus
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::   v1.5.7.RELEASE
+
+2013-07-31 00:08:16.117  INFO 56603 --- [           main] o.s.b.s.app.SampleApplication            : Starting SampleApplication v0.1.0 on mycomputer with PID 56603 (/apps/myapp.jar started by pwebb)
+2013-07-31 00:08:16.166  INFO 56603 --- [           main] ationConfigEmbeddedWebApplicationContext : Refreshing org.springframework.boot.context.embedded.AnnotationConfigEmbeddedWebApplicationContext@6e5a8246: startup date [Wed Jul 31 00:08:16 PDT 2013]; root of context hierarchy
+2014-03-04 13:09:54.912  INFO 41370 --- [           main] .t.TomcatEmbeddedServletContainerFactory : Server initialized with port: 8080
+2014-03-04 13:09:56.501  INFO 41370 --- [           main] o.s.b.s.app.SampleApplication            : Started SampleApplication in 2.992 seconds (JVM running for 3.658)
+```
+感觉很鸡肋，你可以在你的classpath下放置一个banner.txt或者在你的propertise中配置banner.location，插入图片的话可以设置banner.image.location,特殊的文字解码可以指定banner.charset,默认utf-8。
+在banner.txt中可以配置如下信息：
+- ${application.version}
+- ${application.formatted-version}
+- ${spring-boot.version}
+- ${spring-boot.formatted-version}
+- ${application.title}
+
+除此之外你还可以通过编程的方式来定制banner：The **SpringApplication.setBanner**(…​) method can be used if you want to generate a banner programmatically. Use the org.springframework.boot.Banner interface and implement your own **printBanner()** method.
+详情：https://docs.spring.io/spring-boot/docs/1.5.7.RELEASE/reference/htmlsingle/#boot-features-banner
+
+- **定制SpringApplication**
+你可以定制Spring程序的引导过程：
+
+``` stylus
+// 这是一个关闭banner的例子
+public static void main(String[] args) {
+    SpringApplication app = new SpringApplication(MySpringConfiguration.class);
+    app.setBannerMode(Banner.Mode.OFF);
+    app.run(args);
+}
+```
+> It is also possible to configure the SpringApplication using an application.properties file
+
+或者也可以用SpringApplicationBuilder一次性调用多个方法，包括parent和child方法使你的ApplicationContext具有层级关系，我的理解是上下文得到继承，例如：
+
+``` stylus
+new SpringApplicationBuilder()
+        .sources(Parent.class)
+        .child(Application.class)
+        .bannerMode(Banner.Mode.OFF)
+        .run(args);
+```
+详情：https://docs.spring.io/spring-boot/docs/1.5.7.RELEASE/api/org/springframework/boot/builder/SpringApplicationBuilder.html
+
+- Application events and listeners（不是很懂啊）
+
+spring boot在启动过程中增加事件监听机制，为用户功能拓展提供极大的便利。
+实现监听步骤：
+1. 监听类实现ApplicationListener接口 
+2. 将监听类添加到SpringApplication实例
+
+支持的监听类型有：
+1. An **ApplicationStartingEvent** is sent at the start of a run, but before any processing except the registration of listeners and initializers.
+2. An **ApplicationEnvironmentPreparedEvent** is sent when the Environment to be used in the context is known, but before the context is created.
+3. An **ApplicationPreparedEvent** is sent just before the refresh is started, but after bean definitions have been loaded.
+4. An **ApplicationReadyEvent** is sent after the refresh and any related callbacks have been processed to indicate the application is ready to service requests.
+5. An **ApplicationFailedEvent** is sent if there is an exception on startup.
+
+- 获得SpringApplication启动参数
+通过注入一个org.springframework.boot.ApplicationArguments的bean来获得String[]里的参数可以是option和non-option的参数。示例：
+
+``` stylus
+import org.springframework.boot.*
+import org.springframework.beans.factory.annotation.*
+import org.springframework.stereotype.*
+
+@Component
+public class MyBean {
+
+    @Autowired
+    public MyBean(ApplicationArguments args) {
+        boolean debug = args.containsOption("debug");
+        List<String> files = args.getNonOptionArgs();
+        // if run with "--debug logfile.txt" debug=true, files=["logfile.txt"]
+    }
+
+}
+```
+
+
+- ApplicationRunner or CommandLineRunner
+如果需要在SpringApplication刚刚启动之时运行一些特别的代码
+> Both interfaces work in the same way and offer a single run method which will be called just before SpringApplication.run(…​) completes.
+
+二者区别：
+CommandLineRunner：用字符串传参数
+ApplicationRunner:调用ApplicationArguments接口
+
+示例：
+
+``` stylus
+import org.springframework.boot.*
+import org.springframework.stereotype.*
+
+@Component
+public class MyBean implements CommandLineRunner {
+
+    public void run(String... args) {
+        // Do something...
+    }
+
+}
+```
+
+
+- Application exit
+> Each SpringApplication will register a shutdown hook with the JVM to ensure that the ApplicationContext is closed gracefully on exit. 
+bean可以通过实现org.springframework.boot.ExitCodeGenerator接口来返回特殊的退出状态码。主要是当SpringApplication.exit()被调用时，该值也可以传递给System.exit()。示例：
+
+``` stylus
+@SpringBootApplication
+public class ExitCodeApplication {
+
+	@Bean
+	public ExitCodeGenerator exitCodeGenerator() {
+		return new ExitCodeGenerator() {
+			@Override
+			public int getExitCode() {
+				return 42;
+			}
+		};
+	}
+
+	public static void main(String[] args) {
+		System.exit(SpringApplication
+				.exit(SpringApplication.run(ExitCodeApplication.class, args)));
+	}
+
+}
+```
+
+
+
+
+
+
+
+
