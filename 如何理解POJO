@@ -82,4 +82,6 @@ Model是MVC中一个概念，可能不和Entity一一对应，因为展示在Vie
 
 其特点是：除了属性和get、set方法外不包含具体的业务逻辑方法，这个和上文表述的Model很相像，和Entity区别在于没有和数据表中字段一一对应。
 
+摘自：http://www.cnblogs.com/LiuChunfu/p/5574565.html
+
 
