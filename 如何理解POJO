@@ -1,0 +1,85 @@
+---
+title: 如何理解POJO
+tags: POJO
+grammar_cjkRuby: true
+---
+
+
+Spring的官网中，有一节Understanding POJOs。
+
+- **什么是POJO**
+
+Spring的官网给了如下的解释：
+> POJO means Plain Old Java Object. It refers to a Java object (instance of definition) that isn't bogged down by framework extensions.
+
+那么，POJO就是一种简单Java对象（原生Java对象），或者按度娘Plain Ordinary Java Object简单的Java对象，实际就是普通JavaBeans，它不依赖于框架的扩展。
+
+然后Spring 举了一个列子：
+如果要从JMS接收message，你需要实现一个继承MessageListener接口的类，如下：
+
+``` Java
+public class ExampleListener implements MessageListener {
+
+    public void onMessage(Message message) {
+        if (message instanceof TextMessage) {
+            try {
+                System.out.println(((TextMessage) message).getText());
+            }
+            catch (JMSException ex) {
+                throw new RuntimeException(ex);
+            }
+        }
+        else {
+            throw new IllegalArgumentException("Message must be of type TextMessage");
+        }
+    }
+
+}
+```
+
+这种写法使你的代码绑定于特定的情况，这里指的是JMS。这样使你以后很难迁移到其他的消息接收，实现多次listener太多不可行。
+
+而POJO驱动的方法意味着编写您的消息处理解决方案没有接口，例如：
+
+``` Java
+@Component
+public class ExampleListener {
+
+    @JmsListener(destination = "myDestination")
+    public void processOrder(String message) {
+    	System.out.println(message);
+    }
+}
+```
+
+在这个例子中，你的代码不直接绑定到任何接口。相反，将其连接到JMS队列的责任将转移到注释中，这更容易更新。在这个具体的例子，你可以替换@JmsListener使用@RabbitListener。在其他情况下，可以使用基于POJO的解决方案，而不需要任何特定注释。
+
+这只是一个例子。它不是为了说明JMS和RabbitMQ，而是代替编码的价值，而不是绑定到特定的接口。通过使用普通的旧Java对象，您的代码可以简单得多。这有助于更好的测试，灵活性和今后做出新决策的能力。
+
+Spring框架及其各种投资组合项目总是旨在减少代码与现有库之间的耦合。这是依赖注入的一个主要概念，其中您的服务使用方式应该是连接应用程序而不是服务本身的一部分。
+
+其实不是很理解，网上看一篇博客区分一下概念：
+
+- **关于Bean\Entity\Model\POJO的一些个人理解**
+
+**一、Bean**
+
+对于Bean而言，我的理解是只要是Java的类的就可以称为一个Bean，更用在Spring上，被Spring管理的对象就可以将其称作为Bean。
+
+它不仅仅可以包括对象的属性以及get,set方法，还可以有具体的业务逻辑。
+
+**二、Entity**
+
+这个最容易理解，其特点是：数据表对应到实体类的映射
+
+**三、Model**
+
+Model是MVC中一个概念，可能不和Entity一一对应，因为展示在View层中数据可能是一个Entity的精简，也可能是多个Entity的组合。一句话概括：Model是一个高度优化组合或者精简后的一个用于在View层展示数据的对象。
+
+**四、POJO**
+
+简单Java对象，貌似没有经常提到或作为类的后缀存在，难道是因为其名字太长？
+
+其特点是：除了属性和get、set方法外不包含具体的业务逻辑方法，这个和上文表述的Model很相像，和Entity区别在于没有和数据表中字段一一对应。
+
+
