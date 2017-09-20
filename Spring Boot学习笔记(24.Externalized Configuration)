@@ -12,6 +12,19 @@ Spring Boot允许你**外部化配置**所以你可以在不同的环境运行�
 
 SpringBoot中有一个关于Properties的优先顺序，详情https://docs.spring.io/spring-boot/docs/1.5.7.RELEASE/reference/htmlsingle/#boot-features-external-config
 
+``` stylus
+命令行参数
+来自于java:comp/env的JNDI属性
+Java系统属性（System.getProperties()）
+操作系统环境变量
+只有在random.*里包含的属性会产生一个RandomValuePropertySource
+在打包的jar外的应用程序配置文件（application.properties，包含YAML和profile变量）
+在打包的jar内的应用程序配置文件（application.properties，包含YAML和profile变量）
+在@Configuration类上的@PropertySource注解
+默认属性（使用SpringApplication.setDefaultProperties指定）
+```
+
+
 
 示例，通过@Value注解拿到properties中的值：
 
@@ -31,7 +44,7 @@ public class MyBean {
 ```
 还可以在命令行启动时通过参数注入例如`java -jar app.jar --name="Spring"`，后期也可以通过`SPRING_APPLICATION_JSON `来传值，有多种方式命令行环境变量均可。
 
-- Configuring random values
+- **Configuring random values**
 RandomValuePropertySource可以注入随机值包括整型、长整型、uuids、字符串等。
 
 ``` 
@@ -43,10 +56,10 @@ my.number.less.than.ten=${random.int(10)}
 my.number.in.range=${random.int[1024,65536]}
 ```
 
-- Accessing command line properties
+- **Accessing command line properties**
 在命令行中注入值，就是`starting with ‘--’, e.g. --server.port=9000`。你也可以关闭这种方式，通过`SpringApplication.setAddCommandLineProperties(false)`。
 
--  Application property files
+-  **Application property files**
 
 SpringApplication会去如下的路劲找properties：
 1. A `/config` subdirectory of the current directory.
@@ -70,7 +83,7 @@ app.description=${app.name} is a Spring Boot application
 详情：https://docs.spring.io/spring-boot/docs/1.5.7.RELEASE/reference/htmlsingle/#boot-features-external-config
 
 
--  Type-safe Configuration Properties
+-  **Type-safe Configuration Properties**
 
 注解`@Value("${property}") `的方式太重了，特别是有多个properties或者工程存在层级关系时。
 Spring Boot提供一种灵活的方式，使用@ConfigurationProperties("foo")+POJO的方式：
@@ -142,6 +155,81 @@ public class MyConfiguration {
 上面示例中的bean名称将是foo-com.example.FooProperties。
 
 
+- **Third-party configuration第三方配置**
 
+正如使用@ConfigurationProperties注解一个类，你也可以在@Bean方法上使用它。当你需要绑定属性到不受你控制的第三方组件时，这种方式非常有用。
+
+为了从Environment属性配置一个bean，将@ConfigurationProperties添加到它的bean注册过程：
 	
+``` stylus
+@ConfigurationProperties(prefix = "foo")
+@Bean
+public FooComponent fooComponent() {
+    ...
+}
+```
+和上面ConnectionSettings的示例方式相同，任何以foo为前缀的属性定义都会被映射到FooComponent上。
+
+- **Relaxed binding松散的绑定**
+
+Spring Boot使用一些宽松的规则用于绑定Environment属性到@ConfigurationProperties beans，所以Environment属性名和bean属性名不需要精确匹配。常见的示例中有用的包括虚线分割（比如，context--path绑定到contextPath）和将环境属性转为大写字母（比如，PORT绑定port）。例如：
+
+``` stylus
+@Component
+@ConfigurationProperties(prefix="person")
+public class ConnectionSettings {
+    private String firstName;
+}
+```
+下面的属性名都能用于上面的@ConfigurationProperties类：
+
+``` stylus
+属性                  说明
+person.firstName    标准驼峰规则
+person.first-name   虚线表示，推荐用于.properties和.yml文件中
+person.first_name   虚线表示，用于.properties和.yml文件中的一种灵活的格式
+PERSON_FIRST_NAME   大写形式，使用系统环境变量时推荐
+```
+
+- **@ConfigurationProperties Validation校验**
+
+Spring Boot将尝试校验外部的配置，默认使用JSR-303（如果在classpath路径中）。你可以轻松的为你的@ConfigurationProperties类添加JSR-303 javax.validation约束注解：
+
+``` stylus
+@ConfigurationProperties(prefix="connection")
+@Validated
+public class FooProperties {
+
+    @NotNull
+    private InetAddress remoteAddress;
+
+    @Valid
+    private final Security security = new Security();
+
+    // ... getters and setters
+
+    public static class Security {
+
+        @NotEmpty
+        public String username;
+
+        // ... getters and setters
+
+    }
+
+}
+```
+需要注意的是，在校验嵌套属性时，需要加上@Valid的注解。
+
+
+- **@ConfigurationProperties vs. @Value两种方式的对比**
+
+|  Feature   |  @ConfigurationProperties   |  @Value   |  
+| --- | --- | --- | 
+|   Relaxed binding  |  Yes   |   No  |     
+|  Meta-data support   |  Yes   |   NO |     
+|  SpEL evaluation   |   NO  |   Yes  |     
+
+
+
 
