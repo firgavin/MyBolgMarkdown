@@ -20,30 +20,85 @@ pom作为**项目对象模型**。通过xml表示maven项目，使用pom.xml来�
 	<artifactId>...</artifactId>
 	<version>...</version>
 	<packaging>...</packaging>
-
 	<name>...</name>
-
 	<url>...</url>
+	<!-- 基本内容：
+	POM包括了所有的项目信息
+	groupId:项目或者组织的唯一标志，并且配置时生成路径也是由此生成，如org.myproject.mojo生成的相对路径为：/org/myproject/mojo
+	artifactId:项目的通用名称
+	version:项目的版本
+	packaging:打包机制，如pom,jar,maven-plugin,ejb,war,ear,rar,par
+	name:用户描述项目的名称，无关紧要的东西，可选
+	url:应该是只是写明开发团队的网站，无关紧要，可选
+	classifer:分类
+	其中groupId,artifactId,version,packaging这四项组成了项目的唯一坐标。一般情况下，前面三项就可以组成项目的唯一坐标了。 -->
+	
 	<dependencies>
-		...
+		<groupId>com.alibaba.china.shared</groupId>
+	        <artifactId>alibaba.apollo.webx</artifactId>
+	        <version>2.5.0</version>
+	        <exclusions>
+	          <exclusion>
+	            <artifactId>org.slf4j.slf4j-api</artifactId>
+	            <groupId>com.alibaba.external</groupId>
+	          </exclusion>
+		</exclusions>
 	</dependencies>
+	<!-- 其中groupId, artifactId, version这三个组合标示依赖的具体工程，而且 这个依赖工程必需是maven中心包管理范围内的，如果碰上非开源包，maven支持不了这个包，那么则有有三种 方法处理：
+	1.本地安装这个插件install plugin
+	例如：mvn install:intall-file -Dfile=non-maven-proj.jar -DgroupId=som.group -DartifactId=non-maven-proj -Dversion=1
+	2.创建自己的repositories并且部署这个包，使用类似上面的deploy:deploy-file命令，
+	3.设置scope为system,并且指定系统路径。
+	dependency里属性介绍：
+	type：默认为jar类型，常用的类型有：jar,ejb-client,test-jar...,可设置plugins中的extensions值为true后在增加 新的类型，
+	scope：是用来指定当前包的依赖范围，maven的依赖范围
+	optional:设置指依赖是否可选，默认为false,即子项目默认都继承，为true,则子项目必需显示的引入，与dependencyManagement里定义的依赖类似 。
+	exclusions：如果X需要A,A包含B依赖，那么X可以声明不要B依赖，只要在exclusions中声明exclusion.
+	exclusion:是将B从依赖树中删除，如上配置，alibaba.apollo.webx不想使用com.alibaba.external  ,但是alibaba.apollo.webx是集成了com.alibaba.external,r所以就需要排除掉. -->
+	
 	<parent>
-		...
+		<groupId>org.codehaus.mojo</groupId> 
+    		<artifactId>my-parent</artifactId> 
+    		<version>2.0</version> 
+    		<relativePath>../my-parent</relativePath> 
 	</parent>
+	<!-- 如果一个工程是parent或者aggregation（即mutil-module的）的，那么必须在packing赋值为pom,child工程从parent继承的包括：dependencies,developers,contributors,plugin lists,reports lists,plugin execution with matching ids,plugin configuration
+	relativePath是可选的,maven会首先搜索这个地址,在搜索本地远程repositories之前. -->
+	
 	<dependencyManagement>
 		...
 	</dependencyManagement>
+	<!-- dependencyManagement：是用于帮助管理chidren的dependencies的。例如如果parent使用dependencyManagement定义了一个dependencyon junit:junit4.0,那么 它的children就可以只引用 groupId和artifactId,而version就可以通过parent来设置，这样的好处就是可以集中管理 依赖的详情
+	-->
+	
 	<modules>
 		...
 	</modules>
+
+	<!-- properties -->
 	<properties>
 		...
 	</properties>
+	<!-- properties:是为pom定义一些常量，在pom中的其它地方可以直接引用。
+	定义方式如下：
+	<properties>
+		<file.encoding>UTF-8</file_encoding>
+		<java.source.version>1.5</java_source_version>
+		<java.target.version>1.5</java_target_version>
+	</properties>
+	使用方式：${file.encoding}
+	还可以使用project.xx引用pom里定义的其它属性：如$(project.version} -->
 
 	<!--构建设置 -->
 	<build>
 		...
 	</build>
+	<!-- build设置:
+	defaultGoal:默认的目标，必须跟命令行上的参数相同，如：jar:jar,或者与时期parse相同,例如install
+	directory:指定build target目标的目录，默认为$(basedir}/target,即项目根目录下的target
+	finalName:指定去掉后缀的工程名字，例如：默认为${artifactId}-${version}
+	filters:用于定义指定filter属性的位置，例如filter元素赋值filters/filter1.properties,那么这个文件里面就可以定义name=value对，这个name=value对的值就可以在工程pom中通过${name}引用，默认的filter目录是${basedir}/src/main/fiters/ -->
+	
 	<reporting>
 		...
 	</reporting>
