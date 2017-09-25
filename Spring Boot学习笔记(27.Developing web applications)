@@ -7,3 +7,226 @@ grammar_cjkRuby: true
 
 ### Spring Boot特性
 #### Developing web applications开发web应用
+
+Spring Boot非常适合开发web应用程序。你可以使用内嵌的Tomcat，Jetty或Undertow轻轻松松地创建一个HTTP服务器。大多数的web应用都使用spring-boot-starter-web模块进行快速搭建和运行。
+
+- **The ‘Spring Web MVC framework’框架**
+
+Spring Web MVC框架（通常简称为"Spring MVC"）是一个"模型，视图，控制器"的web框架。 Spring MVC允许你创建特定的@Controller或@RestController beans来处理传入的HTTP请求。 使用@RequestMapping注解可以将控制器中的方法映射到相应的HTTP请求。示例：
+
+``` Java
+@RestController
+@RequestMapping(value="/users")
+public class MyRestController {
+
+    @RequestMapping(value="/{user}", method=RequestMethod.GET)
+    public User getUser(@PathVariable Long user) {
+        // ...
+    }
+
+    @RequestMapping(value="/{user}/customers", method=RequestMethod.GET)
+    List<Customer> getUserCustomers(@PathVariable Long user) {
+        // ...
+    }
+
+    @RequestMapping(value="/{user}", method=RequestMethod.DELETE)
+    public User deleteUser(@PathVariable Long user) {
+        // ...
+    }
+
+}
+```
+
+- **Spring MVC auto-configuration自动配置**
+
+Spring Boot为Spring MVC提供适用于多数应用的自动配置功能。在Spring默认基础上，自动配置添加了以下特性：
+
+``` fortran
+引入ContentNegotiatingViewResolver和BeanNameViewResolver beans。
+对静态资源的支持，包括对WebJars的支持。
+自动注册Converter，GenericConverter，Formatter beans。
+对HttpMessageConverters的支持。
+自动注册MessageCodeResolver。
+对静态index.html的支持。
+对自定义Favicon的支持。
+```
+
+如果想全面控制Spring MVC，你可以添加自己的@Configuration，并使用@EnableWebMvc对其注解。如果想保留Spring Boot MVC的特性，并只是添加其他的MVC配置(拦截器，formatters，视图控制器等)，你可以添加自己的WebMvcConfigurerAdapter类型的@Bean（不使用@EnableWebMvc注解）。
+
+- **HttpMessageConverters消息转换器**
+
+Spring MVC使用HttpMessageConverter接口转换HTTP请求和响应。合理的缺省值已经非常好了（out of the box），例如对象可以自动转换为JSON（使用Jackson库）或XML（如果Jackson XML扩展可用则使用它，否则使用JAXB）。字符串默认使用UTF-8编码。
+
+如果需要添加或自定义转换器，你可以使用Spring Boot的HttpMessageConverters类：
+
+``` java
+import org.springframework.boot.autoconfigure.web.HttpMessageConverters;
+import org.springframework.context.annotation.*;
+import org.springframework.http.converter.*;
+
+@Configuration
+public class MyConfiguration {
+
+    @Bean
+    public HttpMessageConverters customConverters() {
+        HttpMessageConverter additional = ...
+        HttpMessageConverter another = ...
+        return new HttpMessageConverters(additional, another);
+    }
+}
+```
+
+任何在上下文中出现的HttpMessageConverter bean将会添加到converters列表，你可以通过这种方式覆盖默认的转换器（converters）。
+
+- **Custom JSON Serializers and Deserializers序列化与反序列化json**
+
+如果你使用Jackson来序列化和反序列化json数据，那么你可能要重写你自己的JsonSerializer和JsonDeserializer类。Spring Boot提供@JsonComponent注解作为一种可选的方式，方便直接注册Spring Bean。
+
+你可以直接在JsonSerializer或者JsonDeserializer的实现处使用@JsonComponent，你也可以使用在那些包含serializers/deserializers作为内置类的类中，例如：
+
+``` java
+import java.io.*;
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.databind.*;
+import org.springframework.boot.jackson.*;
+
+@JsonComponent
+public class Example {
+
+    public static class Serializer extends JsonSerializer<SomeObject> {
+        // ...
+    }
+
+    public static class Deserializer extends JsonDeserializer<SomeObject> {
+        // ...
+    }
+
+}
+```
+Spring Boot也提供sonObjectSerializer和JsonObjectDeserializer基类，在序列化对象时提供有用可选的标准化Jackson版本。
+
+- **MessageCodesResolver**
+
+Spring MVC有一个策略，用于从绑定的errors产生用来渲染错误信息的错误码：MessageCodesResolver。如果设置spring.mvc.message-codes-resolver.format属性为PREFIX_ERROR_CODE或POSTFIX_ERROR_CODE（具体查看DefaultMessageCodesResolver.Format枚举值），Spring Boot会为你创建一个MessageCodesResolver。
+
+- **Static Content静态内容**
+默认情况下，Spring Boot从classpath下一个叫/static（/public，/resources或/META-INF/resources）的文件夹或从ServletContext根目录提供静态内容。这使用了Spring MVC的ResourceHttpRequestHandler，所以你可以通过添加自己的WebMvcConfigurerAdapter并覆写addResourceHandlers方法来改变这个行为（加载静态文件）。
+
+在一个单独的web应用中，容器默认的servlet是开启的，如果Spring决定不处理某些请求，默认的servlet作为一个回退（降级）将从ServletContext根目录加载内容。大多数时候，这不会发生（除非你修改默认的MVC配置），因为Spring总能够通过DispatcherServlet处理请求。
+
+此外，上述标准的静态资源位置有个例外情况是Webjars内容。任何在/webjars/**路径下的资源都将从jar文件中提供，只要它们以Webjars的格式打包。
+
+注：如果你的应用将被打包成jar，那就不要使用src/main/webapp文件夹。尽管该文件夹是一个共同的标准，但它仅在打包成war的情况下起作用，并且如果产生一个jar，多数构建工具都会静悄悄的忽略它。
+
+### Error Handling错误处理
+Spring Boot默认提供一个/error映射用来以合适的方式处理所有的错误，并且它在servlet容器中注册了一个全局的 错误页面。对于机器客户端（相对于浏览器而言，浏览器偏重于人的行为），它会产生一个具有详细错误，HTTP状态，异常信息的JSON响应。对于浏览器客户端，它会产生一个白色标签样式（whitelabel）的错误视图，该视图将以HTML格式显示同样的数据（可以添加一个解析为erro的View来自定义它）。为了完全替换默认的行为，你可以实现ErrorController，并注册一个该类型的bean定义，或简单地添加一个ErrorAttributes类型的bean以使用现存的机制，只是替换显示的内容。
+
+你也可以定义一个@ControllerAdvice来为一个异常控制返回定制的json文档，例如：
+
+``` java
+@ControllerAdvice(basePackageClasses = FooController.class)
+public class FooControllerAdvice extends ResponseEntityExceptionHandler {
+
+    @ExceptionHandler(YourException.class)
+    @ResponseBody
+    ResponseEntity<?> handleControllerException(HttpServletRequest request, Throwable ex) {
+        HttpStatus status = getStatus(request);
+        return new ResponseEntity<>(new CustomErrorType(status.value(), ex.getMessage()), status);
+    }
+
+    private HttpStatus getStatus(HttpServletRequest request) {
+        Integer statusCode = (Integer) request.getAttribute("javax.servlet.error.status_code");
+        if (statusCode == null) {
+            return HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+        return HttpStatus.valueOf(statusCode);
+    }
+
+}
+```
+
+在上面的例子中，你的异常抛自于定义在同package下的FooController，CustomerErrorType的json描述将会被用于代替ErrorAttributes。
+
+对于一个给定的状态码，如果你想显示一个定制的HTML错误页面，那么向/error下添加一个文件。错误页面可以是静态页面，也可以用模板建立。
+例如，给404映射一个静态错误页面你的文件结构应该如下：
+
+``` stylus
+src/
+ +- main/
+     +- java/
+     |   + <source code>
+     +- resources/
+         +- public/
+             +- error/
+             |   +- 404.html
+             +- <other public assets>
+```
+给所有5XX错误使用FreeMarker模板，你的文件结构如下：
+
+``` stylus
+src/
+ +- main/
+     +- java/
+     |   + <source code>
+     +- resources/
+         +- templates/
+             +- error/
+             |   +- 5xx.ftl
+             +- <other templates>
+```
+实现更加复杂的映射你也可以添加beans来实现ErrorViewResolver 接口：
+
+``` java
+public class MyErrorViewResolver implements ErrorViewResolver {
+
+    @Override
+    public ModelAndView resolveErrorView(HttpServletRequest request,
+            HttpStatus status, Map<String, Object> model) {
+        // Use the request or status to optionally return a ModelAndView
+        return ...
+    }
+
+}
+```
+你也可以使用普通的SpringMVC特性例如@ExceptionHandler和@ControllerAdvice。ErrorController将会处理任何没有处理的异常。
+
+脱离SpringMVC管理错误页面，利用ErrorPageRegistrar直接注册错误页面，例如：
+
+``` stylus
+@Bean
+public ErrorPageRegistrar errorPageRegistrar(){
+    return new MyErrorPageRegistrar();
+}
+
+// ...
+
+private static class MyErrorPageRegistrar implements ErrorPageRegistrar {
+
+    @Override
+    public void registerErrorPages(ErrorPageRegistry registry) {
+        registry.addErrorPages(new ErrorPage(HttpStatus.BAD_REQUEST, "/400"));
+    }
+
+}
+```
+如果你为一个错误页面注册路径，那么很可能被Filter拦截而终止（常见于非Spring框架列入 Jersey、Wicket等）Filter应该被直接（显示）注册为一个错误调度（分发器）。
+
+``` stylus
+@Bean
+public FilterRegistrationBean myFilter() {
+    FilterRegistrationBean registration = new FilterRegistrationBean();
+    registration.setFilter(new MyFilter());
+    ...
+    registration.setDispatcherTypes(EnumSet.allOf(DispatcherType.class));
+    return registration;
+}
+```
+
+- Spring HATEOAS
+
+如果你正在开发一个使用超媒体的RESTful API，Spring Boot将为Spring HATEOAS提供自动配置，这在多数应用中都工作良好。自动配置替换了对使用@EnableHypermediaSupport的需求，并注册一定数量的beans来简化构建基于超媒体的应用，这些beans包括一个LinkDiscoverer和配置好的用于将响应正确编排为想要的表示的ObjectMapper。ObjectMapper可以根据spring.jackson.*属性或一个存在的Jackson2ObjectMapperBuilder bean进行自定义。
+
+通过使用@EnableHypermediaSupport，你可以控制Spring HATEOAS的配置。注意这会禁用上述的对ObjectMapper的自定义。
+
+
+
