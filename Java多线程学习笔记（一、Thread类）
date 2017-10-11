@@ -1,0 +1,170 @@
+---
+title: Java多线程学习笔记（一、Thread类） 
+tags: 多线程
+grammar_cjkRuby: true
+---
+
+学习Java多线程、Thread类重点注意如下几点：
+线程的启动
+如何使线程暂停
+如何使线程停止
+线程的优先级
+线程的安全性问题
+
+- 什么是线程
+线程可以理解为进程中独立运行的子任务
+
+多线程是**异步**的，线程调用的时机是随时的。
+
+一个程序（进程）在运行时至少有一个线程在运行。
+
+Java自带对多线程技术的支持，实现多线程编程的方式有两种：
+- 继承自Thread类
+- 继承自Runnable类
+
+#### 继承Thread类
+
+``` monkey
+public class Thread implements Runnable
+```
+
+可以看到Thread类实现了Runnable接口，他们之间具有多态关系。 
+
+最大的局限是不支持多继承。
+
+``` scala
+package learnThread;
+
+public class MyThread extends Thread {
+
+	@Override
+	public void run() {
+		super.run();
+		System.out.println("MyThread");
+	}
+}
+```
+然后
+
+``` java
+package learnThread;
+
+public class Run {
+
+	public static void main(String[] args) {
+		MyThread myThread = new MyThread();
+		myThread.start();
+		System.out.println("Running is over!");
+	}
+}
+```
+
+结果
+
+``` stylus
+Running is over!
+MyThread
+
+```
+
+
+
+使用多线程时，代码的运行结果与代码的执行顺序或者是调用顺序无关。
+
+线程是一个子任务，CPU以不确定的方式，或者是随机的时间来调用线程中的run方法。
+
+线程的随机性
+
+Thread类中的start()方法通知“线程规划器”此这个线程准备就绪，等待调用线程对象的run()方法。本质上就是让系统安排一个时间来调用Thread中的run()方法，也就是启动线程，使线程得到运行，具有异步执行的效果。
+
+``` scala
+package learnThread;
+
+public class MyThread extends Thread {
+
+	@Override
+	public void run() {
+		//super.run();
+		//System.out.println("MyThread");
+		try {
+			for(int i=0;i<10;i++) {
+				int time= (int) (Math.random()*1000);
+				Thread.sleep(time);
+				System.out.println("run="+Thread.currentThread().getName());
+			}
+		} catch (InterruptedException e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
+	}
+}
+```
+
+然后执行类中
+
+``` java
+package learnThread;
+
+public class Run {
+
+	public static void main(String[] args) {
+		try {
+			MyThread thread = new MyThread();
+			thread.setName("myThread");
+			thread.start();
+			for(int i=0;i<10;i++) {
+				int time = (int) (Math.random()*1000);
+				Thread.sleep(time);
+				System.out.println("main="+Thread.currentThread().getName());
+			}
+		} catch (InterruptedException e) {
+			// TODO: handle exception
+			e.printStackTrace();
+		}
+		
+	}
+}
+```
+执行结果
+
+``` stylus
+run=myThread
+run=myThread
+main=main
+run=myThread
+run=myThread
+main=main
+run=myThread
+main=main
+run=myThread
+main=main
+run=myThread
+main=main
+main=main
+main=main
+run=myThread
+run=myThread
+main=main
+main=main
+run=myThread
+main=main
+
+```
+
+分析一下，在main和myThread中均有产生随机数，然后然当前的线程sleep，这算是模拟操作系统对线程的挂起，那么当一个线程被挂起时那么系统会自动去执行其他的线程，这样就出现了结果中main和myThread交替进行的现象。
+
+
+
+多次调用start()方法，会抛出 `java.lang.IllegalThreadException`。
+
+> 执行start()方法的顺序不代表线程启动的顺序
+
+也就是说，哪个线程先start(),与系统执行该线程无关。
+
+
+
+
+#### 实现Runnable接口
+
+
+
