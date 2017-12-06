@@ -4,6 +4,17 @@ tags: 面试
 grammar_cjkRuby: true
 ---
 
+### 问题描述
+针对海量的IP信息（10G），型如：
+
+``` stylus
+IP	 username	example.com	   字段1	字段2   ...
+```
+在小内存的条件（256M）下，完成：
+1. 对每个IP出现的次数进行统计
+2. 对相同IP出现的用户数进行统计
+3. 对每个IP记录一次实例
+
 ### 解决思路
 首先我在路上想到以前学过一个基于散列技术提高Apriori算法效率的例子，回去后查书的思路大概如下，当由候选项集产生频繁项集时，将它们散列到散列表结构中不同的桶中。当对应桶的计数低于支持度阈值的时候显然这个桶里的候选集不可能是频繁的。
 
@@ -47,9 +58,281 @@ hash_map，首先分配一大片内存，形成许多桶。是利用hash函数�
 
 2、哈希函数：hash = (hash * 113 + iphp->addr[i]) % 6271
 ```
-
+剩下的就是解决一些文件操作等相关的逻辑，这里不再赘述。
 
 ### 代码实现
+
+``` cpp
+#include<iostream>
+#include<fstream>
+#include<string>
+#include<vector>
+#include<map>
+#include<set>
+
+using namespace std;
+
+//定义单批次最多处理多少数据
+const int maxnum = 500;
+string textname = "test.txt";
+
+typedef struct Ipinfo
+{
+	string ip;
+	long count;
+	set<string> user;
+	string example;
+
+	Ipinfo() {
+		count = 0;
+		user.clear();
+	}
+
+	friend ostream &operator << (ostream &os, const Ipinfo record) {
+		os << "Ip:" <<record.ip << " Count:" << record.count << " Users:"
+			<< record.user.size() << " Example:" << record.example << endl;
+		return os;
+	}
+}Ipinfo;
+
+map<string, Ipinfo> ipmap;
+
+string iphash(const string& s)
+{
+	//Nginx的ip_hash
+	typedef string::size_type string_size;
+	string_size i = 0;
+	int time = 3;//只累加IP点分十进制前三位
+	int hash = 89;
+	while (i != s.size()&&(time--))
+	{
+		int num = 0;
+		while (i != s.size() && s[i] != '.')
+		{
+			num = num * 10 + (s[i] - '0');
+			i++;
+		}
+		hash = (hash * 113 + num) % 6271;
+		if (s[i] == '.') i++;
+	}
+
+	return to_string(hash);
+}
+
+vector<string> split(const string& s)
+{
+	//将string分割成vector
+	vector<string> ret;
+	typedef string::size_type string_size;
+	string_size i = 0;
+
+	while (i != s.size())
+	{
+		while (i != s.size() && isspace(s[i]))
+			++i;
+		string_size j = i;
+		while (j != s.size() && !isspace(s[j]))
+			++j;
+		if (i != j)
+		{
+			ret.push_back(s.substr(i, j - i));
+			i = j;
+		}
+	}
+	return ret;
+}
+
+int findline(const string& locate,const string& key)
+{
+	//去定位文件中找是否存在记录
+	int ret = -1;
+	string line;
+	ifstream fin(locate.c_str());
+	if (fin.is_open())
+	{
+		while (getline(fin, line))
+		{
+			vector<string> tmp = split(line);
+			if (tmp.size() == 0)
+				continue;
+			++ret;
+			if (key.compare(tmp[0]) == 0) {
+				//找到返回行数
+				return ret;
+			}
+		}
+	}
+	//找不到返回-1
+	return -1;
+}
+
+void updateline(Ipinfo record,int linenum,const string& locate)
+{
+	int i = -1;
+	string tempStr, line;
+	ifstream fin(locate.c_str());
+	if (fin.is_open()) {
+		cout << "lineNum:"<< linenum << "    lcoate:" << locate << endl;   
+		while (getline(fin, line))
+		{
+			i++;
+			if (linenum != i)
+			{
+				tempStr += line;
+			}
+			else
+			{
+				string temp("");
+				//更新该行
+				vector<string> tmp = split(line);
+				if (tmp.size() != 0) {
+					//跟新count并合并用户
+					record.count += atoi(tmp[1].c_str());
+					vector<string>::iterator iter = tmp.begin()+4;
+					while (iter != tmp.end())
+					{
+						record.user.insert(*iter);
+						++iter;
+					}
+					//构造新行
+					temp = record.ip + " " + to_string(record.count) + " " + record.example + " " + to_string(record.user.size()) + " ";
+					set<string>::iterator newiter = record.user.begin();
+					while (newiter != record.user.end())
+					{
+						temp += *newiter + " ";
+						++newiter;
+					}
+				}
+				tempStr += temp;
+			}
+			tempStr += '\n';
+		}
+		fin.close();
+	}
+	ofstream fout(locate.c_str());
+	if (fout.is_open()) {
+		fout.flush();
+		fout << tempStr;
+		/*打印跟新内容
+		cout << "update content: " << tempStr << endl;*/
+		fout.close();
+	}
+}
+
+void insertline(Ipinfo record,const string& locate)
+{
+	//向定位文件中插入新行
+	ofstream fout(locate.c_str(), ios::app);
+	if (fout.is_open())
+	{
+		fout << record.ip << " " << record.count << " " << record.example << " " << record.user.size() << " ";
+		set<string>::iterator iter = record.user.begin();
+		while (iter != record.user.end())
+		{
+			fout << *iter << " ";
+			++iter;
+		}
+		fout << endl;
+		/*打印新插入行的内容
+		cout << "insert content: " << record.ip << " " << record.count << " " << record.example << " " << record.user.size() << " ";
+		set<string>::iterator itercheck = record.user.begin();
+		while (itercheck != record.user.end())
+		{
+			cout << *itercheck << " ";
+			++itercheck;
+		}
+		cout << endl;
+		*/
+	}
+}
+
+int main(int argc, char* argv[])
+{
+	//cli处理
+	if (argc == 2)
+	{
+		textname = argv[1];
+		cout << argv[0] << " uses data from " << textname << endl;
+	}
+	ifstream fin(textname.c_str());
+	if (fin.is_open())
+	{
+		while (!fin.eof())
+		{
+			string line;
+			long time = maxnum+1;
+			while (getline(fin, line) && (time--))
+			{
+				vector<string> tmp = split(line);
+				if (tmp.size() == 0)
+					continue;
+				map<string, Ipinfo>::iterator iter = ipmap.find(tmp[0]);
+				if (iter != ipmap.end())
+				{
+					//单批次处理找到更新
+					iter->second.count++;
+					iter->second.user.insert(tmp[1]);
+				}
+				else {
+					//单批次处理没有找到插入
+					Ipinfo record;
+					record.ip = tmp[0];
+					record.count++;
+					record.user.insert(tmp[1]);
+					record.example = tmp[2];
+					ipmap.insert(pair<string, Ipinfo>(record.ip, record));
+				}
+				tmp.clear();
+			}
+
+			//对单批次处理结果进行统计
+			for (map<string, Ipinfo>::iterator iter = ipmap.begin();iter != ipmap.end();iter++)
+			{
+				Ipinfo record = iter->second;
+				cout << record << endl;
+				//定位本次记录位置
+				string locate = iphash(record.ip);
+				cout << "locate: " << locate << endl;
+				//打开文件，检查是否拥有记录
+				int line = findline(locate, record.ip);
+				if (line != -1)
+				{
+					cout << "update file!" << endl;
+					updateline(record,line,locate);
+				}
+				else {
+					cout << "insert new line!" << endl;
+					insertline(record,locate);
+				}
+
+			}
+			cout << "|--------------------------------------------------|" << endl;
+			ipmap.clear();
+		}
+	}
+
+}
+```
+构造输入如下：
+
+![构造数据][1]
+
+对输入的构造考虑如下，同网段不同IP，同IP不同用户，同IP不同实例，IP第三段不同，IP第四段不同，复制多次模拟大量数据。
+
+结果：
+可以看到，同网段的IP信息被记录在同一个文件中，IP出现的次数与用户数累计。
+
+![结果1][2]
+
+构造的少量不同网段IP信息被记录在其他文件中：
+
+![结果2][3]
+
+不同的IP信息得到有效的映射存储：
+
+![结果3][4]
+
+程序基本达成目的。
 
 ### 参考
 > 关于`C++`文件操作资料：C++ Prime Plus
@@ -57,3 +340,8 @@ hash_map，首先分配一大片内存，形成许多桶。是利用hash函数�
 > 关于STL中hash_map资料：http://blog.csdn.net/u010025211/article/details/46653519
 > 关于Nginx的ip_hash资料：https://www.cnblogs.com/xiaohuo/archive/2012/08/13/2636468.html
 
+
+  [1]: ./images/1512566485065.jpg "1512566485065.jpg"
+  [2]: ./images/1512566738894.jpg "1512566738894.jpg"
+  [3]: ./images/1512566947682.jpg "1512566947682.jpg"
+  [4]: ./images/1512567047555.jpg "1512567047555.jpg"
